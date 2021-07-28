@@ -101,6 +101,8 @@ action pair_lj_class2_gpu.cpp pair_lj_class2.cpp
 action pair_lj_class2_gpu.h pair_lj_class2.cpp
 action pair_lj_cubic_gpu.cpp pair_lj_cubic.cpp
 action pair_lj_cubic_gpu.h pair_lj_cubic.h
+action pair_lj_cut_bump_gpu.cpp
+action pair_lj_cut_bump_gpu.h
 action pair_lj_cut_coul_cut_gpu.cpp
 action pair_lj_cut_coul_cut_gpu.h
 action pair_lj_cut_coul_debye_gpu.cpp pair_lj_cut_coul_debye.cpp
