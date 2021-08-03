@@ -305,7 +305,7 @@ $(OBJ_DIR)/lj_bump.cubin: lal_lj_bump.cu lal_precision.h lal_preprocessor.h
 	$(CUDA) --cubin -DNV_KERNEL -o $@ lal_lj_bump.cu
 
 $(OBJ_DIR)/lj_bump_cubin.h: $(OBJ_DIR)/lj_bump.cubin $(OBJ_DIR)/lj_bump.cubin
-	$(BIN2C) -c -n lj $(OBJ_DIR)/lj_bump.cubin > $(OBJ_DIR)/lj_bump_cubin.h
+	$(BIN2C) -c -n lj_bump $(OBJ_DIR)/lj_bump.cubin > $(OBJ_DIR)/lj_bump_cubin.h
 
 $(OBJ_DIR)/lal_lj_bump.o: $(ALL_H) lal_lj_bump.h lal_lj_bump.cpp $(OBJ_DIR)/lj_bump_cubin.h $(OBJ_DIR)/lal_base_atomic.o
 	$(CUDR) -o $@ -c lal_lj_bump.cpp -I$(OBJ_DIR)

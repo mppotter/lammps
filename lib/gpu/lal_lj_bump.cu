@@ -13,7 +13,7 @@
 //    email                : pottem3@rpi.edu
 // ***************************************************************************
 
-#include <cmath>
+#include <math.h>
 
 #if defined(NV_KERNEL) || defined(USE_HIP)
 #include "lal_aux_fun1.h"
@@ -43,7 +43,7 @@ __kernel void k_lj_bump(const __global numtyp4 *restrict x_,
   atom_info(t_per_atom,ii,tid,offset);
 
   // for bump
-  double rtmp, btmp;
+  numtyp rtmp, btmp;
 
   acctyp energy=(acctyp)0;
   acctyp4 f;
@@ -87,7 +87,7 @@ __kernel void k_lj_bump(const __global numtyp4 *restrict x_,
         // for bump
         rtmp = sqrt(r2inv);
         if(rtmp >= bump_data[mtype].x && rtmp <= bump_data[mtype].y) {
-            force += -bump_data[mtype].z*M_PI*sin(M_PI*(bump_data[mtype].y+bump_data[mtype].x-rtmp-rtmp)/(bump_data[mtype].y-bump_data[mtype].x))/(bump_data[mtype].y-bump_data[mtype].x)/rtmp;
+            force += -bump_data[mtype].z*M_PI*sinpi((bump_data[mtype].y+bump_data[mtype].x-rtmp-rtmp)/(bump_data[mtype].y-bump_data[mtype].x))/(bump_data[mtype].y-bump_data[mtype].x)/rtmp;
         }
 
         f.x+=delx*force;
@@ -98,7 +98,7 @@ __kernel void k_lj_bump(const __global numtyp4 *restrict x_,
           numtyp e=r6inv*(lj3[mtype].x*r6inv-lj3[mtype].y);
           //bump
           if(rtmp >= bump_data[mtype].x && rtmp <= bump_data[mtype].y) {
-            btmp = sin(M_PI*(bump_data[mtype].y-rtmp)/(bump_data[mtype].y-bump_data[mtype].x));
+            btmp = sinpi((bump_data[mtype].y-rtmp)/(bump_data[mtype].y-bump_data[mtype].x));
             e += bump_data[mtype].z*btmp*btmp;
           }
           energy+=factor_lj*(e-lj3[mtype].z);
@@ -134,7 +134,7 @@ __kernel void k_lj_bump_fast(const __global numtyp4 *restrict x_,
   atom_info(t_per_atom,ii,tid,offset);
 
   // for bump
-  double rtmp, btmp;
+  numtyp rtmp, btmp;
 
   __local numtyp4 lj1[MAX_SHARED_TYPES*MAX_SHARED_TYPES];
   __local numtyp4 lj3[MAX_SHARED_TYPES*MAX_SHARED_TYPES];
@@ -192,7 +192,7 @@ __kernel void k_lj_bump_fast(const __global numtyp4 *restrict x_,
         // for bump
         rtmp = sqrt(r2inv);
         if(rtmp >= bump_data[mtype].x && rtmp <= bump_data[mtype].y) {
-            force += -bump_data[mtype].z*M_PI*sin(M_PI*(bump_data[mtype].y+bump_data[mtype].x-rtmp-rtmp)/(bump_data[mtype].y-bump_data[mtype].x))/(bump_data[mtype].y-bump_data[mtype].x)/rtmp;
+            force += -bump_data[mtype].z*M_PI*sinpi((bump_data[mtype].y+bump_data[mtype].x-rtmp-rtmp)/(bump_data[mtype].y-bump_data[mtype].x))/(bump_data[mtype].y-bump_data[mtype].x)/rtmp;
         }
 
         f.x+=delx*force;
@@ -203,7 +203,7 @@ __kernel void k_lj_bump_fast(const __global numtyp4 *restrict x_,
           numtyp e=r6inv*(lj3[mtype].x*r6inv-lj3[mtype].y);
             //bump
             if(rtmp >= bump_data[mtype].x && rtmp <= bump_data[mtype].y) {
-                btmp = sin(M_PI*(bump_data[mtype].y-rtmp)/(bump_data[mtype].y-bump_data[mtype].x));
+                btmp = sinpi((bump_data[mtype].y-rtmp)/(bump_data[mtype].y-bump_data[mtype].x));
                 e += bump_data[mtype].z*btmp*btmp;
             }
           energy+=factor_lj*(e-lj3[mtype].z);
