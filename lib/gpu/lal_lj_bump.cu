@@ -226,7 +226,7 @@ __kernel void k_lj_bump_fast(const __global numtyp4 *restrict x_,
         #endif
 
         // for bump
-        rtmp = ucl_sqrt(r2inv);
+        rtmp = rsqrt(r2inv);
         if(rtmp >= bumpx && rtmp <= bumpy) {
             force += -bumpz*M_PI*sinpi((bumpy+bumpx-rtmp-rtmp)/(bumpy-bumpx))/(bumpy-bumpx)/rtmp;
         }
