@@ -87,7 +87,7 @@ __kernel void k_lj_bump(const __global numtyp4 *restrict x_,
         force*=factor_lj;
 
         // for bump
-        rtmp = sqrt(r2inv);
+        rtmp = rsqrt(r2inv);
         if(rtmp >= bump_data[mtype].x && rtmp <= bump_data[mtype].y) {
             force += -bump_data[mtype].z*M_PI*sinpi((bump_data[mtype].y+bump_data[mtype].x-rtmp-rtmp)/(bump_data[mtype].y-bump_data[mtype].x))/(bump_data[mtype].y-bump_data[mtype].x)/rtmp;
         }
