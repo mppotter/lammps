@@ -1,6 +1,6 @@
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -49,8 +49,8 @@ class PairLJCutBump : public Pair {
  protected:
   double cut_global;
   double **cut;
-  double **epsilon,**sigma;
-  double **lj1,**lj2,**lj3,**lj4,**offset;
+  double **epsilon, **sigma;
+  double **lj1, **lj2, **lj3, **lj4, **offset;
   double *cut_respa;
 
   double **start_bump; //INPUT is relative starting position (wrt sigma) for the bump

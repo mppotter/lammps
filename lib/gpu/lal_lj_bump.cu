@@ -117,9 +117,9 @@ __kernel void k_lj_bump(const __global numtyp4 *restrict x_,
 
     } // for nbor
   } // if ii
-    store_answers(f,energy,virial,ii,inum,tid,t_per_atom,offset,eflag,vflag,
-                  ans,engv);
-} // if ii
+  store_answers(f,energy,virial,ii,inum,tid,t_per_atom,offset,eflag,vflag,
+                ans,engv);
+}
 
 __kernel void k_lj_bump_fast(const __global numtyp4 *restrict x_,
                         const __global numtyp4 *restrict lj1_in,
@@ -250,9 +250,13 @@ __kernel void k_lj_bump_fast(const __global numtyp4 *restrict x_,
                 btmp = sinpi((bumpy-rtmp)/(bumpy-bumpx));
                 e += bumpz*btmp*btmp;
             }
+          #ifndef ONETYPE
           energy+=factor_lj*(e-lj3z);
+          #else
+          energy+=(e-lj3z);
+          #endif
         }
-        if (vflag>0) {
+        if (EVFLAG && vflag) {
           virial[0] += delx*delx*force;
           virial[1] += dely*dely*force;
           virial[2] += delz*delz*force;
@@ -263,7 +267,7 @@ __kernel void k_lj_bump_fast(const __global numtyp4 *restrict x_,
       }
     } // for nbor
   } // if ii
-    store_answers(f,energy,virial,ii,inum,tid,t_per_atom,offset,eflag,vflag,
-                  ans,engv);
+  store_answers(f,energy,virial,ii,inum,tid,t_per_atom,offset,eflag,vflag,
+                ans,engv);
 }
 

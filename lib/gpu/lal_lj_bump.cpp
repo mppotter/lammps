@@ -71,7 +71,7 @@ int LJBumpT::init(const int ntypes,
 
   int success;
   success=this->init_atomic(nlocal,nall,max_nbors,maxspecial,cell_size,
-                            gpu_split, _screen,lj_bump,"k_lj_bump",onetype);
+                            gpu_split,_screen,lj_bump,"k_lj_bump",onetype);
   if (success!=0)
     return success;
 

@@ -17,7 +17,7 @@ PairStyle(lj/cut,PairLJCut);
 // clang-format on
 #else
 
-#ifndef LMP_PAIR_LJ_CUT_H
+#ifndef LMP_PAIR_LJ_CUT_Hs
 #define LMP_PAIR_LJ_CUT_H
 
 #include "pair.h"
