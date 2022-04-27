@@ -25,7 +25,6 @@
 #include "math_const.h"
 #include "memory.h"
 #include "neigh_list.h"
-#include "neigh_request.h"
 #include "neighbor.h"
 #include "respa.h"
 #include "update.h"
@@ -426,19 +425,19 @@ void PairLJCutBump::allocate()
 
   memory->create(cutsq, n, n, "pair:cutsq");
 
-  memory->create(cut,n+1,n+1,"pair:cut");
-  memory->create(epsilon,n+1,n+1,"pair:epsilon");
-  memory->create(sigma,n+1,n+1,"pair:sigma");
-  memory->create(lj1,n+1,n+1,"pair:lj1");
-  memory->create(lj2,n+1,n+1,"pair:lj2");
-  memory->create(lj3,n+1,n+1,"pair:lj3");
-  memory->create(lj4,n+1,n+1,"pair:lj4");
-  memory->create(offset,n+1,n+1,"pair:offset");
+  memory->create(cut,n,n,"pair:cut");
+  memory->create(epsilon,n,n,"pair:epsilon");
+  memory->create(sigma,n,n,"pair:sigma");
+  memory->create(lj1,n,n,"pair:lj1");
+  memory->create(lj2,n,n,"pair:lj2");
+  memory->create(lj3,n,n,"pair:lj3");
+  memory->create(lj4,n,n,"pair:lj4");
+  memory->create(offset,n,n,"pair:offset");
 
   //for bump
-  memory->create(start_bump,n+1,n+1,"pair:startbump");
-  memory->create(end_bump,n+1,n+1,"pair:endbump");
-  memory->create(energy_bump,n+1,n+1,"pair:energybump");
+  memory->create(start_bump,n,n,"pair:startbump");
+  memory->create(end_bump,n,n,"pair:endbump");
+  memory->create(energy_bump,n,n,"pair:energybump");
 }
 
 /* ----------------------------------------------------------------------
@@ -518,21 +517,14 @@ void PairLJCutBump::init_style()
 {
   // request regular or rRESPA neighbor list
 
-  int irequest;
-  int respa = 0;
+  int list_style = NeighConst::REQ_DEFAULT;
 
   if (update->whichflag == 1 && utils::strmatch(update->integrate_style, "^respa")) {
-    if (((Respa *) update->integrate)->level_inner >= 0) respa = 1;
-    if (((Respa *) update->integrate)->level_middle >= 0) respa = 2;
+    auto respa = (Respa *) update->integrate;
+    if (respa->level_inner >= 0) list_style = NeighConst::REQ_RESPA_INOUT;
+    if (respa->level_middle >= 0) list_style = NeighConst::REQ_RESPA_ALL;
   }
-
-  irequest = neighbor->request(this, instance_me);
-
-  if (respa >= 1) {
-    neighbor->requests[irequest]->respaouter = 1;
-    neighbor->requests[irequest]->respainner = 1;
-  }
-  if (respa == 2) neighbor->requests[irequest]->respamiddle = 1;
+  neighbor->add_request(this, list_style);
 
   // set rRESPA cutoffs
 
@@ -706,9 +698,8 @@ void PairLJCutBump::write_data_all(FILE *fp)
 
 /* ---------------------------------------------------------------------- */
 
-double PairLJCutBump::single(int /*i*/, int /*j*/, int itype, int jtype, double rsq,
-                         double /*factor_coul*/, double factor_lj,
-                         double &fforce)
+double PairLJCut::single(int /*i*/, int /*j*/, int itype, int jtype, double rsq,
+                         double /*factor_coul*/, double factor_lj, double &fforce)
 {
   double r2inv, r6inv, forcelj, philj;
 
