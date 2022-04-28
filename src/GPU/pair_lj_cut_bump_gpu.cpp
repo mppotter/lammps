@@ -29,7 +29,6 @@
 #include <cmath>
 
 using namespace LAMMPS_NS;
-using namespace MathConst;
 
 // External functions from cuda library for atom decomposition
 
