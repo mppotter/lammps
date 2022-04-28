@@ -177,12 +177,12 @@ void PairLJCutBumpGPU::reinit()
 double PairLJCutBumpGPU::memory_usage()
 {
   double bytes = Pair::memory_usage();
-  return bytes + ljl_gpu_bytes();
+  return bytes + ljb_gpu_bytes();
 }
 
 /* ---------------------------------------------------------------------- */
 
-void PairLJCutGPU::cpu_compute(int start, int inum, int eflag, int /* vflag */, int *ilist,
+void PairLJCutBumpGPU::cpu_compute(int start, int inum, int eflag, int /* vflag */, int *ilist,
                                int *numneigh, int **firstneigh)
 {
   int i, j, ii, jj, jnum, itype, jtype;
@@ -229,7 +229,7 @@ void PairLJCutGPU::cpu_compute(int start, int inum, int eflag, int /* vflag */, 
         // for bump
         rtmp = sqrt(rsq);
         if(rtmp >= start_bump[itype][jtype] && rtmp <= end_bump[itype][jtype]) {
-            fpair += -energy_bump[itype][jtype]*MY_PI*sin(MY_PI*(end_bump[itype][jtype]+start_bump[itype][jtype]-rtmp-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]))/(end_bump[itype][jtype]-start_bump[itype][jtype])/rtmp;
+            fpair += -energy_bump[itype][jtype]*M_PI*sin(M_PI*(end_bump[itype][jtype]+start_bump[itype][jtype]-rtmp-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]))/(end_bump[itype][jtype]-start_bump[itype][jtype])/rtmp;
         }
 
         f[i][0] += delx * fpair;
@@ -240,7 +240,7 @@ void PairLJCutGPU::cpu_compute(int start, int inum, int eflag, int /* vflag */, 
           evdwl = r6inv * (lj3[itype][jtype] * r6inv - lj4[itype][jtype]) - offset[itype][jtype];
           //bump
           if(rtmp >= start_bump[itype][jtype] && rtmp <= end_bump[itype][jtype]) {
-              btmp = sin(MY_PI*(end_bump[itype][jtype]-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]));
+              btmp = sin(M_PI*(end_bump[itype][jtype]-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]));
               evdwl += energy_bump[itype][jtype]*btmp*btmp;
           }
           evdwl *= factor_lj;
