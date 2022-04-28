@@ -16,26 +16,17 @@
 ------------------------------------------------------------------------- */
 
 #include "pair_lj_cut_bump_gpu.h"
-#include <cmath>
-#include <cstdio>
 
-#include <cstring>
 #include "atom.h"
-#include "atom_vec.h"
-#include "comm.h"
-#include "force.h"
-#include "neighbor.h"
-#include "neigh_list.h"
-#include "integrate.h"
-#include "math_const.h"
-#include "memory.h"
-#include "error.h"
-#include "neigh_request.h"
-#include "universe.h"
-#include "update.h"
 #include "domain.h"
+#include "error.h"
+#include "force.h"
 #include "gpu_extra.h"
+#include "neigh_list.h"
+#include "neighbor.h"
 #include "suffix.h"
+
+#include <cmath>
 
 using namespace LAMMPS_NS;
 using namespace MathConst;
@@ -93,7 +84,7 @@ PairLJCutBumpGPU::~PairLJCutBumpGPU()
 
 void PairLJCutBumpGPU::compute(int eflag, int vflag)
 {
-  ev_init(eflag,vflag);
+  ev_init(eflag, vflag);
 
   int nall = atom->nlocal + atom->nghost;
   int inum, host_start;
@@ -101,7 +92,7 @@ void PairLJCutBumpGPU::compute(int eflag, int vflag)
   bool success = true;
   int *ilist, *numneigh, **firstneigh;
   if (gpu_mode != GPU_FORCE) {
-    double sublo[3],subhi[3];
+    double sublo[3], subhi[3];
     if (domain->triclinic == 0) {
       sublo[0] = domain->sublo[0];
       sublo[1] = domain->sublo[1];
@@ -110,31 +101,27 @@ void PairLJCutBumpGPU::compute(int eflag, int vflag)
       subhi[1] = domain->subhi[1];
       subhi[2] = domain->subhi[2];
     } else {
-      domain->bbox(domain->sublo_lamda,domain->subhi_lamda,sublo,subhi);
+      domain->bbox(domain->sublo_lamda, domain->subhi_lamda, sublo, subhi);
     }
     inum = atom->nlocal;
-    firstneigh = ljb_gpu_compute_n(neighbor->ago, inum, nall,
-                                   atom->x, atom->type, sublo,
-                                   subhi, atom->tag, atom->nspecial,
-                                   atom->special, eflag, vflag, eflag_atom,
-                                   vflag_atom, host_start,
-                                   &ilist, &numneigh, cpu_time, success);
+    firstneigh =
+        ljb_gpu_compute_n(neighbor->ago, inum, nall, atom->x, atom->type, sublo, subhi, atom->tag,
+                          atom->nspecial, atom->special, eflag, vflag, eflag_atom, vflag_atom,
+                          host_start, &ilist, &numneigh, cpu_time, success);
   } else {
     inum = list->inum;
     ilist = list->ilist;
     numneigh = list->numneigh;
     firstneigh = list->firstneigh;
-    ljb_gpu_compute(neighbor->ago, inum, nall, atom->x, atom->type,
-                    ilist, numneigh, firstneigh, eflag, vflag, eflag_atom,
-                    vflag_atom, host_start, cpu_time, success);
+    ljb_gpu_compute(neighbor->ago, inum, nall, atom->x, atom->type, ilist, numneigh, firstneigh,
+                    eflag, vflag, eflag_atom, vflag_atom, host_start, cpu_time, success);
   }
-  if (!success)
-    error->one(FLERR,"Insufficient memory on accelerator");
+  if (!success) error->one(FLERR, "Insufficient memory on accelerator");
 
-  if (host_start<inum) {
-    cpu_time = MPI_Wtime();
+  if (host_start < inum) {
+    cpu_time = platform::walltime();
     cpu_compute(host_start, inum, eflag, vflag, ilist, numneigh, firstneigh);
-    cpu_time = MPI_Wtime() - cpu_time;
+    cpu_time = platform::walltime() - cpu_time;
   }
 }
 
@@ -146,19 +133,15 @@ void PairLJCutBumpGPU::init_style()
 {
   cut_respa = nullptr;
 
-  if (force->newton_pair)
-    error->all(FLERR,"Cannot use newton pair with lj/cut/bump/gpu pair style");
-
   // Repeat cutsq calculation because done after call to init_style
   double maxcut = -1.0;
   double cut;
   for (int i = 1; i <= atom->ntypes; i++) {
     for (int j = i; j <= atom->ntypes; j++) {
       if (setflag[i][j] != 0 || (setflag[i][i] != 0 && setflag[j][j] != 0)) {
-        cut = init_one(i,j);
+        cut = init_one(i, j);
         cut *= cut;
-        if (cut > maxcut)
-          maxcut = cut;
+        if (cut > maxcut) maxcut = cut;
         cutsq[i][j] = cutsq[j][i] = cut;
       } else
         cutsq[i][j] = cutsq[j][i] = 0.0;
@@ -166,21 +149,17 @@ void PairLJCutBumpGPU::init_style()
   }
   double cell_size = sqrt(maxcut) + neighbor->skin;
 
-  int maxspecial=0;
-  if (atom->molecular)
-    maxspecial=atom->maxspecial;
-  int success = ljb_gpu_init(atom->ntypes+1, cutsq, lj1, lj2, lj3, lj4,
+  int maxspecial = 0;
+  if (atom->molecular != Atom::ATOMIC) maxspecial = atom->maxspecial;
+  int mnf = 5e-2 * neighbor->oneatom;
+  int success = ljb_gpu_init(atom->ntypes + 1, cutsq, lj1, lj2, lj3, lj4,
                              offset, force->special_lj, atom->nlocal,
-                             atom->nlocal+atom->nghost, start_bump, end_bump,
-                             energy_bump, 300, maxspecial,
-                             cell_size, gpu_mode, screen);
-  GPU_EXTRA::check_flag(success,error,world);
+                             atom->nlocal + atom->nghost, start_bump, end_bump,
+                             energy_bump, mnf, maxspecial, cell_size,
+                             gpu_mode, screen);
+  GPU_EXTRA::check_flag(success, error, world);
 
-  if (gpu_mode == GPU_FORCE) {
-    int irequest = neighbor->request(this,instance_me);
-    neighbor->requests[irequest]->half = 0;
-    neighbor->requests[irequest]->full = 1;
-  }
+  if (gpu_mode == GPU_FORCE) neighbor->add_request(this, NeighConst::REQ_FULL);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -198,18 +177,17 @@ void PairLJCutBumpGPU::reinit()
 double PairLJCutBumpGPU::memory_usage()
 {
   double bytes = Pair::memory_usage();
-  return bytes + ljb_gpu_bytes();
+  return bytes + ljl_gpu_bytes();
 }
 
 /* ---------------------------------------------------------------------- */
 
-void PairLJCutBumpGPU::cpu_compute(int start, int inum, int eflag, int /* vflag */,
-                               int *ilist, int *numneigh, int **firstneigh) {
-  
- 
-  int i,j,ii,jj,jnum,itype,jtype;
-  double xtmp,ytmp,ztmp,delx,dely,delz,evdwl,fpair;
-  double rsq,r2inv,r6inv,forcelj,factor_lj;
+void PairLJCutGPU::cpu_compute(int start, int inum, int eflag, int /* vflag */, int *ilist,
+                               int *numneigh, int **firstneigh)
+{
+  int i, j, ii, jj, jnum, itype, jtype;
+  double xtmp, ytmp, ztmp, delx, dely, delz, evdwl, fpair;
+  double rsq, r2inv, r6inv, forcelj, factor_lj;
   int *jlist;
 
     // for bump
@@ -239,14 +217,14 @@ void PairLJCutBumpGPU::cpu_compute(int start, int inum, int eflag, int /* vflag 
       delx = xtmp - x[j][0];
       dely = ytmp - x[j][1];
       delz = ztmp - x[j][2];
-      rsq = delx*delx + dely*dely + delz*delz;
+      rsq = delx * delx + dely * dely + delz * delz;
       jtype = type[j];
 
       if (rsq < cutsq[itype][jtype]) {
-        r2inv = 1.0/rsq;
-        r6inv = r2inv*r2inv*r2inv;
-        forcelj = r6inv * (lj1[itype][jtype]*r6inv - lj2[itype][jtype]);
-        fpair = factor_lj*forcelj*r2inv;
+        r2inv = 1.0 / rsq;
+        r6inv = r2inv * r2inv * r2inv;
+        forcelj = r6inv * (lj1[itype][jtype] * r6inv - lj2[itype][jtype]);
+        fpair = factor_lj * forcelj * r2inv;
 
         // for bump
         rtmp = sqrt(rsq);
@@ -254,13 +232,12 @@ void PairLJCutBumpGPU::cpu_compute(int start, int inum, int eflag, int /* vflag 
             fpair += -energy_bump[itype][jtype]*MY_PI*sin(MY_PI*(end_bump[itype][jtype]+start_bump[itype][jtype]-rtmp-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]))/(end_bump[itype][jtype]-start_bump[itype][jtype])/rtmp;
         }
 
-        f[i][0] += delx*fpair;
-        f[i][1] += dely*fpair;
-        f[i][2] += delz*fpair;
+        f[i][0] += delx * fpair;
+        f[i][1] += dely * fpair;
+        f[i][2] += delz * fpair;
 
         if (eflag) {
-          evdwl = r6inv*(lj3[itype][jtype]*r6inv-lj4[itype][jtype]) -
-            offset[itype][jtype];
+          evdwl = r6inv * (lj3[itype][jtype] * r6inv - lj4[itype][jtype]) - offset[itype][jtype];
           //bump
           if(rtmp >= start_bump[itype][jtype] && rtmp <= end_bump[itype][jtype]) {
               btmp = sin(MY_PI*(end_bump[itype][jtype]-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]));
@@ -269,7 +246,7 @@ void PairLJCutBumpGPU::cpu_compute(int start, int inum, int eflag, int /* vflag 
           evdwl *= factor_lj;
         }
 
-        if (evflag) ev_tally_full(i,evdwl,0.0,fpair,delx,dely,delz);
+        if (evflag) ev_tally_full(i, evdwl, 0.0, fpair, delx, dely, delz);
       }
     }
   }
