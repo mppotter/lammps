@@ -218,23 +218,27 @@ void Comm::init()
   if (force->pair) maxforward = MAX(maxforward,force->pair->comm_forward);
   if (force->pair) maxreverse = MAX(maxreverse,force->pair->comm_reverse);
 
+  if (force->bond) maxforward = MAX(maxforward,force->bond->comm_forward);
+  if (force->bond) maxreverse = MAX(maxreverse,force->bond->comm_reverse);
+
   for (const auto &fix : fix_list) {
-    maxforward = MAX(maxforward,fix->comm_forward);
-    maxreverse = MAX(maxreverse,fix->comm_reverse);
+    maxforward = MAX(maxforward, fix->comm_forward);
+    maxreverse = MAX(maxreverse, fix->comm_reverse);
   }
 
-  for (int i = 0; i < modify->ncompute; i++) {
-    maxforward = MAX(maxforward,modify->compute[i]->comm_forward);
-    maxreverse = MAX(maxreverse,modify->compute[i]->comm_reverse);
+  for (const auto &compute : modify->get_compute_list()) {
+    maxforward = MAX(maxforward,compute->comm_forward);
+    maxreverse = MAX(maxreverse,compute->comm_reverse);
   }
 
-  for (int i = 0; i < output->ndump; i++) {
-    maxforward = MAX(maxforward,output->dump[i]->comm_forward);
-    maxreverse = MAX(maxreverse,output->dump[i]->comm_reverse);
+  for (const auto &dump: output->get_dump_list()) {
+    maxforward = MAX(maxforward,dump->comm_forward);
+    maxreverse = MAX(maxreverse,dump->comm_reverse);
   }
 
   if (force->newton == 0) maxreverse = 0;
   if (force->pair) maxreverse = MAX(maxreverse,force->pair->comm_reverse_off);
+  if (force->bond) maxreverse = MAX(maxreverse,force->bond->comm_reverse_off);
 
   // maxexchange_atom = size of an exchanged atom, set by AtomVec
   //   only needs to be set if size > BUFEXTRA
@@ -243,8 +247,7 @@ void Comm::init()
   maxexchange_atom = atom->avec->maxexchange;
 
   maxexchange_fix_dynamic = 0;
-  for (const auto &fix : fix_list)
-    if (fix->maxexchange_dynamic) maxexchange_fix_dynamic = 1;
+  for (const auto &fix : fix_list) if (fix->maxexchange_dynamic) maxexchange_fix_dynamic = 1;
 
   if ((mode == Comm::MULTI) && (neighbor->style != Neighbor::MULTI))
     error->all(FLERR,"Cannot use comm mode multi without multi-style neighbor lists");
@@ -266,8 +269,7 @@ void Comm::init()
 void Comm::init_exchange()
 {
   maxexchange_fix = 0;
-  for (const auto &fix : modify->get_fix_list())
-    maxexchange_fix += fix->maxexchange;
+  for (const auto &fix : modify->get_fix_list()) maxexchange_fix += fix->maxexchange;
 
   maxexchange = maxexchange_atom + maxexchange_fix;
   bufextra = maxexchange + BUFEXTRA;
@@ -280,12 +282,12 @@ void Comm::init_exchange()
 
 void Comm::modify_params(int narg, char **arg)
 {
-  if (narg < 1) error->all(FLERR,"Illegal comm_modify command");
+  if (narg < 1) utils::missing_cmd_args(FLERR, "comm_modify", error);
 
   int iarg = 0;
   while (iarg < narg) {
     if (strcmp(arg[iarg],"mode") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal comm_modify command");
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "comm_modify mode", error);
       if (strcmp(arg[iarg+1],"single") == 0) {
         // need to reset cutghostuser when switching comm mode
         if (mode == Comm::MULTI) cutghostuser = 0.0;
@@ -309,26 +311,25 @@ void Comm::modify_params(int narg, char **arg)
         if (mode == Comm::MULTI) cutghostuser = 0.0;
         memory->destroy(cutusermulti);
         mode = Comm::MULTIOLD;
-      } else error->all(FLERR,"Illegal comm_modify command");
+      } else error->all(FLERR,"Unknown comm_modify mode argument: {}", arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg],"group") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal comm_modify command");
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "comm_modify group", error);
       bordergroup = group->find(arg[iarg+1]);
       if (bordergroup < 0)
-        error->all(FLERR,"Invalid group in comm_modify command");
-      if (bordergroup && (atom->firstgroupname == nullptr ||
-                          strcmp(arg[iarg+1],atom->firstgroupname) != 0))
-        error->all(FLERR,"Comm_modify group != atom_modify first group");
+        error->all(FLERR, "Invalid comm_modify keyword: group {} not found", arg[iarg+1]);
+      if (bordergroup && ((atom->firstgroupname == nullptr) || strcmp(arg[iarg+1],atom->firstgroupname) != 0))
+        error->all(FLERR, "Comm_modify group != atom_modify first group: {}", atom->firstgroupname);
       iarg += 2;
     } else if (strcmp(arg[iarg],"cutoff") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal comm_modify command");
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "comm_modify cutoff", error);
       if (mode == Comm::MULTI)
         error->all(FLERR, "Use cutoff/multi keyword to set cutoff in multi mode");
       if (mode == Comm::MULTIOLD)
         error->all(FLERR, "Use cutoff/multi/old keyword to set cutoff in multi mode");
       cutghostuser = utils::numeric(FLERR,arg[iarg+1],false,lmp);
       if (cutghostuser < 0.0)
-        error->all(FLERR,"Invalid cutoff in comm_modify command");
+        error->all(FLERR,"Invalid cutoff {} in comm_modify command", arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(arg[iarg],"cutoff/multi") == 0) {
       int i,nlo,nhi;
@@ -353,7 +354,7 @@ void Comm::modify_params(int narg, char **arg)
       cut = utils::numeric(FLERR,arg[iarg+2],false,lmp);
       cutghostuser = MAX(cutghostuser,cut);
       if (cut < 0.0)
-        error->all(FLERR,"Invalid cutoff in comm_modify command");
+        error->all(FLERR,"Invalid cutoff {} in comm_modify command", arg[iarg+2]);
       // collections use 1-based indexing externally and 0-based indexing internally
       for (i=nlo; i<=nhi; ++i)
         cutusermulti[i-1] = cut;
@@ -368,8 +369,7 @@ void Comm::modify_params(int narg, char **arg)
       if (domain->box_exist == 0)
         error->all(FLERR, "Cannot set cutoff/multi before simulation box is defined");
       const int ntypes = atom->ntypes;
-      if (iarg+3 > narg)
-        error->all(FLERR,"Illegal comm_modify command");
+      if (iarg+3 > narg) utils::missing_cmd_args(FLERR, "comm_modify cutoff/multi/old", error);
       if (cutusermultiold == nullptr) {
         memory->create(cutusermultiold,ntypes+1,"comm:cutusermultiold");
         for (i=0; i < ntypes+1; ++i)
@@ -379,7 +379,7 @@ void Comm::modify_params(int narg, char **arg)
       cut = utils::numeric(FLERR,arg[iarg+2],false,lmp);
       cutghostuser = MAX(cutghostuser,cut);
       if (cut < 0.0)
-        error->all(FLERR,"Invalid cutoff in comm_modify command");
+        error->all(FLERR,"Invalid cutoff {} in comm_modify command", arg[iarg+2]);
       for (i=nlo; i<=nhi; ++i)
         cutusermultiold[i] = cut;
       iarg += 3;
@@ -389,10 +389,10 @@ void Comm::modify_params(int narg, char **arg)
       multi_reduce = 1;
       iarg += 1;
     } else if (strcmp(arg[iarg],"vel") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal comm_modify command");
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "comm_modify vel", error);
       ghost_velocity = utils::logical(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
-    } else error->all(FLERR,"Illegal comm_modify command");
+    } else error->all(FLERR,"Unknown comm_modify keyword: {}", arg[iarg]);
   }
 }
 
@@ -550,7 +550,7 @@ void Comm::set_proc_grid(int outflag)
 
   // create ProcMap class to create 3d grid and map procs to it
 
-  ProcMap *pmap = new ProcMap(lmp);
+  auto pmap = new ProcMap(lmp);
 
   // create 3d grid of processors
   // produces procgrid and coregrid (if relevant)
@@ -1011,7 +1011,7 @@ rendezvous_irregular(int n, char *inbuf, int insize, int inorder, int *procs,
 {
   // irregular comm of inbuf from caller decomp to rendezvous decomp
 
-  Irregular *irregular = new Irregular(lmp);
+  auto irregular = new Irregular(lmp);
 
   int nrvous;
   if (inorder) nrvous = irregular->create_data_grouped(n,procs);
@@ -1019,8 +1019,7 @@ rendezvous_irregular(int n, char *inbuf, int insize, int inorder, int *procs,
 
   // add 1 item to the allocated buffer size, so the returned pointer is not a null pointer
 
-  char *inbuf_rvous = (char *) memory->smalloc((bigint) nrvous*insize+1,
-                                               "rendezvous:inbuf");
+  auto inbuf_rvous = (char *) memory->smalloc((bigint) nrvous*insize+1, "rendezvous:inbuf");
   irregular->exchange_data(inbuf,insize,inbuf_rvous);
 
   bigint irregular1_bytes = irregular->memory_usage();
@@ -1033,14 +1032,12 @@ rendezvous_irregular(int n, char *inbuf, int insize, int inorder, int *procs,
   int flag;
   int *procs_rvous;
   char *outbuf_rvous;
-  int nrvous_out = callback(nrvous,inbuf_rvous,flag,
-                            procs_rvous,outbuf_rvous,ptr);
+  int nrvous_out = callback(nrvous,inbuf_rvous,flag, procs_rvous,outbuf_rvous,ptr);
 
   if (flag != 1) memory->sfree(inbuf_rvous);  // outbuf_rvous = inbuf_vous
   if (flag == 0) {
     if (statflag) rendezvous_stats(n,0,nrvous,nrvous_out,insize,outsize,
-                                   (bigint) nrvous_out*sizeof(int) +
-                                   irregular1_bytes);
+                                   (bigint) nrvous_out*sizeof(int) + irregular1_bytes);
     return 0;    // all nout_rvous are 0, no 2nd comm stage
   }
 
@@ -1050,14 +1047,12 @@ rendezvous_irregular(int n, char *inbuf, int insize, int inorder, int *procs,
   irregular = new Irregular(lmp);
 
   int nout;
-  if (outorder)
-    nout = irregular->create_data_grouped(nrvous_out,procs_rvous);
+  if (outorder) nout = irregular->create_data_grouped(nrvous_out,procs_rvous);
   else nout = irregular->create_data(nrvous_out,procs_rvous);
 
   // add 1 item to the allocated buffer size, so the returned pointer is not a null pointer
 
-  outbuf = (char *) memory->smalloc((bigint) nout*outsize+1,
-                                    "rendezvous:outbuf");
+  outbuf = (char *) memory->smalloc((bigint) nout*outsize+1, "rendezvous:outbuf");
   irregular->exchange_data(outbuf_rvous,outsize,outbuf);
 
   bigint irregular2_bytes = irregular->memory_usage();
@@ -1164,8 +1159,7 @@ rendezvous_all2all(int n, char *inbuf, int insize, int inorder, int *procs,
   // all2all comm of inbuf from caller decomp to rendezvous decomp
   // add 1 item to the allocated buffer size, so the returned pointer is not a null pointer
 
-  char *inbuf_rvous = (char *) memory->smalloc((bigint) nrvous*insize+1,
-                                               "rendezvous:inbuf");
+  auto inbuf_rvous = (char *) memory->smalloc((bigint) nrvous*insize+1, "rendezvous:inbuf");
   memset(inbuf_rvous,0,(bigint) nrvous*insize*sizeof(char));
 
   MPI_Alltoallv(inbuf_a2a,sendcount,sdispls,MPI_CHAR,
@@ -1184,8 +1178,7 @@ rendezvous_all2all(int n, char *inbuf, int insize, int inorder, int *procs,
   int *procs_rvous;
   char *outbuf_rvous;
 
-  int nrvous_out = callback(nrvous,inbuf_rvous,flag,
-                            procs_rvous,outbuf_rvous,ptr);
+  int nrvous_out = callback(nrvous,inbuf_rvous,flag, procs_rvous,outbuf_rvous,ptr);
 
   if (flag != 1) memory->sfree(inbuf_rvous);  // outbuf_rvous = inbuf_vous
   if (flag == 0) {
@@ -1206,8 +1199,7 @@ rendezvous_all2all(int n, char *inbuf, int insize, int inorder, int *procs,
 
     // add 1 item to the allocated buffer size, so the returned pointer is not a null pointer
 
-    outbuf_a2a = (char *) memory->smalloc((bigint) nrvous_out*outsize+1,
-                                          "rendezvous:outbuf");
+    outbuf_a2a = (char *) memory->smalloc((bigint) nrvous_out*outsize+1, "rendezvous:outbuf");
     memory->create(offsets,nprocs,"rendezvous:offsets");
 
     for (int i = 0; i < nprocs; i++) procs_a2a[i] = 0;
@@ -1225,8 +1217,7 @@ rendezvous_all2all(int n, char *inbuf, int insize, int inorder, int *procs,
       offset += outsize;
     }
 
-    all2all2_bytes = nprocs*sizeof(int) + nprocs*sizeof(bigint) +
-      (bigint)nrvous_out*outsize;
+    all2all2_bytes = nprocs*sizeof(int) + nprocs*sizeof(bigint) + (bigint)nrvous_out*outsize;
 
   } else {
     procs_a2a = procs_rvous;

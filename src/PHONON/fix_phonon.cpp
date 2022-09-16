@@ -50,11 +50,11 @@ using namespace FixConst;
 enum{FORWARD=-1,BACKWARD=1};
 
 static const char cite_fix_phonon[] =
-  "fix phonon command:\n\n"
+  "fix phonon command: doi:10.1016/j.cpc.2011.04.019\n\n"
   "@Article{Kong11,\n"
   " author = {L. T. Kong},\n"
-  " title = {Phonon dispersion measured directly from molecular dynamics simulations},\n"
-  " journal = {Comp.~Phys.~Comm.},\n"
+  " title = {Phonon Dispersion Measured Directly from Molecular Dynamics Simulations},\n"
+  " journal = {Comput.\\ Phys.\\ Commun.},\n"
   " year =    2011,\n"
   " volume =  182,\n"
   " pages =   {2201--2207}\n"
@@ -215,11 +215,10 @@ FixPhonon::FixPhonon(LAMMPS *lmp,  int narg, char **arg) : Fix(lmp, narg, arg)
 
   // default temperature is from thermo
   TempSum = new double[sysdim];
-  id_temp = new char[12];
-  strcpy(id_temp,"thermo_temp");
+  id_temp = utils::strdup("thermo_temp");
   int icompute = modify->find_compute(id_temp);
   temperature = modify->compute[icompute];
-  inv_nTemp = 1./group->count(temperature->igroup);
+  inv_nTemp = 1.0/group->count(temperature->igroup);
 
 } // end of constructor
 
@@ -671,7 +670,7 @@ void FixPhonon::postprocess( )
 
   // to get Phi = KT.G^-1; normalization of FFTW data is done here
   double boltz = force->boltz, TempAve = 0.;
-  double *kbtsqrt = new double[sysdim];
+  auto kbtsqrt = new double[sysdim];
   double TempFac = inv_neval * inv_nTemp;
   double NormFac = TempFac * double(ntotal);
 
@@ -695,7 +694,7 @@ void FixPhonon::postprocess( )
   MPI_Gatherv(Phi_q[0],mynq*fft_dim2*2,MPI_DOUBLE,Phi_all[0],recvcnts,displs,MPI_DOUBLE,0,world);
 
   // to collect all basis info and averaged it on root
-  double *basis_root = new double[fft_dim];
+  auto basis_root = new double[fft_dim];
   if (fft_dim > sysdim) MPI_Reduce(&basis[1][0], &basis_root[sysdim], fft_dim-sysdim, MPI_DOUBLE, MPI_SUM, 0, world);
 
   if (me == 0) { // output dynamic matrix by root

@@ -41,14 +41,15 @@ using namespace MathConst;
 #define BIG 1000000000
 
 static const char cite_fix_orient_bcc[] =
-  "fix orient/bcc command:\n\n"
+  "fix orient/bcc command: doi:10.1016/j.commatsci.2016.02.016\n\n"
   "@Article{Wicaksono16,\n"
-  " author = {A. T. Wicaksono, C. W. Sinclair, M. Militzer},\n"
-  " title = {An atomistic study of the correlation between the migration of planar and curved grain boundaries},\n"
-  " journal = {Computational Materials Science},\n"
-  " year =    2016,\n"
-  " volume =  117,\n"
-  " pages =   {397--405}\n"
+  "  author = {A. T. Wicaksono and C. W. Sinclair and M. Militzer},\n"
+  "  title = {An Atomistic Study of the Correlation Between the Migration\n"
+  "    of Planar and Curved Grain Boundaries},\n"
+  "  journal = {Computational Materials Science},\n"
+  "  year =    2016,\n"
+  "  volume =  117,\n"
+  "  pages =   {397--405}\n"
   "}\n\n";
 
 /* ---------------------------------------------------------------------- */
@@ -201,7 +202,7 @@ int FixOrientBCC::setmask()
 void FixOrientBCC::init()
 {
   if (utils::strmatch(update->integrate_style,"^respa")) {
-    ilevel_respa = ((Respa *) update->integrate)->nlevels-1;
+    ilevel_respa = (dynamic_cast<Respa *>(update->integrate))->nlevels-1;
     if (respa_level >= 0) ilevel_respa = MIN(respa_level,ilevel_respa);
   }
 
@@ -224,9 +225,9 @@ void FixOrientBCC::setup(int vflag)
   if (utils::strmatch(update->integrate_style,"^verlet"))
     post_force(vflag);
   else {
-    ((Respa *) update->integrate)->copy_flevel_f(ilevel_respa);
+    (dynamic_cast<Respa *>(update->integrate))->copy_flevel_f(ilevel_respa);
     post_force_respa(vflag,ilevel_respa,0);
-    ((Respa *) update->integrate)->copy_f_flevel(ilevel_respa);
+    (dynamic_cast<Respa *>(update->integrate))->copy_f_flevel(ilevel_respa);
   }
 }
 
@@ -566,8 +567,8 @@ void FixOrientBCC::find_best_ref(double *displs, int which_crystal,
 
 int FixOrientBCC::compare(const void *pi, const void *pj)
 {
-  FixOrientBCC::Sort *ineigh = (FixOrientBCC::Sort *) pi;
-  FixOrientBCC::Sort *jneigh = (FixOrientBCC::Sort *) pj;
+  auto ineigh = (FixOrientBCC::Sort *) pi;
+  auto jneigh = (FixOrientBCC::Sort *) pj;
 
   if (ineigh->rsq < jneigh->rsq) return -1;
   else if (ineigh->rsq > jneigh->rsq) return 1;

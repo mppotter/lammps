@@ -38,13 +38,14 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 
 static const char cite_fix_acks2_reax[] =
-  "fix acks2/reaxff command:\n\n"
+  "fix acks2/reaxff command: doi:10.1137/18M1224684\n\n"
   "@Article{O'Hearn2020,\n"
-  " author = {K. A. O'Hearn, A. Alperen, and H. M. Aktulga},\n"
+  " author = {K. A. {O'Hearn} and A. Alperen and H. M. Aktulga},\n"
   " title = {Fast Solvers for Charge Distribution Models on Shared Memory Platforms},\n"
-  " journal = {SIAM J. Sci. Comput.},\n"
+  " journal = {SIAM J.\\ Sci.\\ Comput.},\n"
   " year =    2020,\n"
   " volume =  42,\n"
+  " number =  1,\n"
   " pages =   {1--22}\n"
   "}\n\n";
 
@@ -94,8 +95,8 @@ FixACKS2ReaxFF::~FixACKS2ReaxFF()
   memory->destroy(s_hist_X);
   memory->destroy(s_hist_last);
 
-  deallocate_storage();
-  deallocate_matrix();
+  FixACKS2ReaxFF::deallocate_storage();
+  FixACKS2ReaxFF::deallocate_matrix();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -134,7 +135,7 @@ void FixACKS2ReaxFF::pertype_parameters(char *arg)
     eta = (double *) pair->extract("eta",tmp);
     gamma = (double *) pair->extract("gamma",tmp);
     bcut_acks2 = (double *) pair->extract("bcut_acks2",tmp);
-    double* bond_softness_ptr = (double *) pair->extract("bond_softness",tmp);
+    auto  bond_softness_ptr = (double *) pair->extract("bond_softness",tmp);
 
     if (chi == nullptr || eta == nullptr || gamma == nullptr ||
         bcut_acks2 == nullptr || bond_softness_ptr == nullptr)

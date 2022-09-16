@@ -44,7 +44,7 @@ using namespace LAMMPS_NS;
 PairEAMIntel::PairEAMIntel(LAMMPS *lmp) : PairEAM(lmp)
 {
   suffix_flag |= Suffix::INTEL;
-  fp_float = 0;
+  fp_float = nullptr;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -197,7 +197,7 @@ void PairEAMIntel::eval(const int offload, const int vflag,
 
   const int * _noalias const ilist = list->ilist;
   const int * _noalias const numneigh = list->numneigh;
-  const int ** _noalias const firstneigh = (const int **)list->firstneigh;
+  const int ** _noalias const firstneigh = (const int **)list->firstneigh;  // NOLINT
   const FC_PACKED1_T * _noalias const rhor_spline_f = fc.rhor_spline_f;
   const FC_PACKED1_T * _noalias const rhor_spline_e = fc.rhor_spline_e;
   const FC_PACKED2_T * _noalias const z2r_spline_t = fc.z2r_spline_t;
@@ -306,7 +306,7 @@ void PairEAMIntel::eval(const int offload, const int vflag,
         const flt_t ytmp = x[i].y;
         const flt_t ztmp = x[i].z;
 
-        acc_t rhoi = (acc_t)0.0;
+        auto  rhoi = (acc_t)0.0;
         int ej = 0;
         #if defined(LMP_SIMD_COMPILER)
         #pragma vector aligned
@@ -347,14 +347,15 @@ void PairEAMIntel::eval(const int offload, const int vflag,
           p = MIN(p,(flt_t)1.0);
           if (!ONETYPE)
             rhor_joff = rhor_ioff + jtype * jstride;
-          const int joff = rhor_joff + m;
+          const int joff = IP_PRE_dword_index(rhor_joff + m);
           flt_t ra;
           ra = ((rhor_spline_e[joff].a*p + rhor_spline_e[joff].b) * p +
                 rhor_spline_e[joff].c) * p + rhor_spline_e[joff].d;
           rhoi += ra;
           if (NEWTON_PAIR) {
             if (!ONETYPE) {
-              const int ioff = jtype * istride + itype * jstride + m;
+              const int ioff = IP_PRE_dword_index(jtype * istride + itype *
+                                                  jstride + m);
               ra = ((rhor_spline_e[ioff].a*p + rhor_spline_e[ioff].b)*p +
                     rhor_spline_e[ioff].c) * p + rhor_spline_e[ioff].d;
             }
@@ -439,7 +440,7 @@ void PairEAMIntel::eval(const int offload, const int vflag,
       #pragma vector aligned
       #endif
       for (int ii = iifrom; ii < iito; ++ii) {
-        const int i = ilist[ii];
+        const int i = IP_PRE_dword_index(ilist[ii]);
         int itype;
         if (!ONETYPE) itype = x[i].w;
         flt_t p = rho[i]*frdrho + (flt_t)1.0;
@@ -448,7 +449,7 @@ void PairEAMIntel::eval(const int offload, const int vflag,
         p -= m;
         p = MIN(p,(flt_t)1.0);
         if (!ONETYPE) frho_ioff = itype * fstride;
-        const int ioff = frho_ioff + m;
+        const int ioff = IP_PRE_dword_index(frho_ioff + m);
         fp_f[i] = (frho_spline_f[ioff].a*p + frho_spline_f[ioff].b)*p +
           frho_spline_f[ioff].c;
         if (EFLAG) {
@@ -553,13 +554,14 @@ void PairEAMIntel::eval(const int offload, const int vflag,
           p = MIN(p,(flt_t)1.0);
           if (!ONETYPE)
             rhor_joff = rhor_ioff + jtype * jstride;
-          const int joff = rhor_joff + m;
+          const int joff = IP_PRE_dword_index(rhor_joff + m);
           const flt_t rhojp = (rhor_spline_f[joff].a*p +
                                rhor_spline_f[joff].b)*p +
             rhor_spline_f[joff].c;
           flt_t rhoip;
           if (!ONETYPE) {
-            const int ioff = jtype * istride + itype * jstride + m;
+            const int ioff = IP_PRE_dword_index(jtype * istride +
+                                                itype * jstride + m);
             rhoip = (rhor_spline_f[ioff].a*p + rhor_spline_f[ioff].b)*p +
               rhor_spline_f[ioff].c;
           } else
@@ -656,7 +658,7 @@ void PairEAMIntel::eval(const int offload, const int vflag,
   if (EFLAG || vflag)
     fix->add_result_array(f_start, ev_global, offload, eatom, 0, vflag);
   else
-    fix->add_result_array(f_start, 0, offload);
+    fix->add_result_array(f_start, nullptr, offload);
 }
 
 /* ----------------------------------------------------------------------

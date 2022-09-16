@@ -36,13 +36,13 @@ using namespace LAMMPS_NS;
 using namespace MathConst;
 
 static const char cite_dihedral_tablecut[] =
-  "dihedral_style  table/cut  command:\n\n"
+  "dihedral_style table/cut command: doi:10.1021/acs.jctc.7b01229\n\n"
   "@Article{Salerno17,\n"
   " author =  {K. M. Salerno and N. Bernstein},\n"
   " title =   {Persistence Length, End-to-End Distance, and Structure of Coarse-Grained Polymers},\n"
-  " journal = {J.~Chem.~Theory Comput.},\n"
+  " journal = {J.~Chem.\\ Theory Comput.},\n"
   " year =    2018,\n"
-  " DOI = 10.1021/acs.jctc.7b01229"
+  " DOI = \"10.1021/acs.jctc.7b01229\"\n"
   "}\n\n";
 
 /* ---------------------------------------------------------------------- */
@@ -523,9 +523,9 @@ void DihedralTableCut::coeff(int narg, char **arg)
   // We also want the angles to be sorted in increasing order.
   // This messy code fixes these problems with the user's data:
   {
-    double *phifile_tmp = new double[tb->ninput];  //temporary arrays
-    double *ffile_tmp = new double[tb->ninput];  //used for sorting
-    double *efile_tmp = new double[tb->ninput];
+    auto phifile_tmp = new double[tb->ninput];  //temporary arrays
+    auto ffile_tmp = new double[tb->ninput];  //used for sorting
+    auto efile_tmp = new double[tb->ninput];
 
     // After re-imaging, does the range of angles cross the 0 or 2*PI boundary?
     // If so, find the discontinuity:

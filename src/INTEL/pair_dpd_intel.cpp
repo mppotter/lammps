@@ -179,12 +179,12 @@ void PairDPDIntel::eval(const int offload, const int vflag,
 
   ATOM_T * _noalias const x = buffers->get_x(offload);
   typedef struct { double x, y, z; } lmp_vt;
-  lmp_vt *v = (lmp_vt *)atom->v[0];
+  auto *v = (lmp_vt *)atom->v[0];
   const flt_t dtinvsqrt = 1.0/sqrt(update->dt);
 
   const int * _noalias const ilist = list->ilist;
   const int * _noalias const numneigh = list->numneigh;
-  const int ** _noalias const firstneigh = (const int **)list->firstneigh;
+  const int ** _noalias const firstneigh = (const int **)list->firstneigh;  // NOLINT
   const FC_PACKED1_T * _noalias const param = fc.param[0];
   const flt_t * _noalias const special_lj = fc.special_lj;
   int * _noalias const rngi_thread = fc.rngi;
@@ -312,13 +312,13 @@ void PairDPDIntel::eval(const int offload, const int vflag,
             sbindex = jlist[jj] >> SBBITS & 3;
             j = jlist[jj] & NEIGHMASK;
           } else
-            j = jlist[jj];
+            j = IP_PRE_dword_index(jlist[jj]);
 
           const flt_t delx = xtmp - x[j].x;
           const flt_t dely = ytmp - x[j].y;
           const flt_t delz = ztmp - x[j].z;
           if (!ONETYPE) {
-            jtype = x[j].w;
+            jtype = IP_PRE_dword_index(x[j].w);
             icut = parami[jtype].icut;
           }
           const flt_t rsq = delx * delx + dely * dely + delz * delz;
@@ -428,7 +428,7 @@ void PairDPDIntel::eval(const int offload, const int vflag,
   if (EFLAG || vflag)
     fix->add_result_array(f_start, ev_global, offload, eatom, 0, vflag);
   else
-    fix->add_result_array(f_start, 0, offload);
+    fix->add_result_array(f_start, nullptr, offload);
 }
 
 /* ----------------------------------------------------------------------

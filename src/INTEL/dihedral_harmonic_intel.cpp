@@ -163,11 +163,11 @@ void DihedralHarmonicIntel::eval(const int vflag,
     #else
     for (int n = nfrom; n < nto; n += npl) {
     #endif
-      const int i1 = dihedrallist[n].a;
-      const int i2 = dihedrallist[n].b;
-      const int i3 = dihedrallist[n].c;
-      const int i4 = dihedrallist[n].d;
-      const int type = dihedrallist[n].t;
+      const int i1 = IP_PRE_dword_index(dihedrallist[n].a);
+      const int i2 = IP_PRE_dword_index(dihedrallist[n].b);
+      const int i3 = IP_PRE_dword_index(dihedrallist[n].c);
+      const int i4 = IP_PRE_dword_index(dihedrallist[n].d);
+      const int type = IP_PRE_dword_index(dihedrallist[n].t);
 
       // 1st bond
 
@@ -225,7 +225,7 @@ void DihedralHarmonicIntel::eval(const int vflag,
       const flt_t tk = fc.fc[type].k;
       const int m = fc.fc[type].multiplicity;
 
-      flt_t p = (flt_t)1.0;
+      auto  p = (flt_t)1.0;
       flt_t ddf1, df1;
       ddf1 = df1 = (flt_t)0.0;
 

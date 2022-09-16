@@ -77,7 +77,7 @@
 using namespace LAMMPS_NS;
 
 static constexpr const char *const cite_openkim =
-  "OpenKIM: https://doi.org/10.1007/s11837-011-0102-6\n\n"
+  "OpenKIM Project: doi:10.1007/s11837-011-0102-6\n\n"
   "@Article{tadmor:elliott:2011,\n"
   " author = {E. B. Tadmor and R. S. Elliott and J. P. Sethna and R. E. Miller "
   "and C. A. Becker},\n"
@@ -774,8 +774,7 @@ int PairKIM::get_neigh(void const * const dataObject,
                        int * const numberOfNeighbors,
                        int const ** const neighborsOfParticle)
 {
-  PairKIM const * const Model
-    = reinterpret_cast<PairKIM const *>(dataObject);
+  auto  const Model = reinterpret_cast<PairKIM const *>(dataObject);
 
   if (numberOfNeighborLists != Model->kim_number_of_neighbor_lists)
     return true;
@@ -1058,19 +1057,16 @@ int PairKIM::check_for_routine_compatibility()
         pkim, modelRoutineName, &present, &required);
     if (error) return true;
 
-    if ((present == true) && (required == true)) {
-      if (!(KIM_ModelRoutineName_Equal(modelRoutineName,
-                                       KIM_MODEL_ROUTINE_NAME_Create)
-            || KIM_ModelRoutineName_Equal(
-                   modelRoutineName,
-                   KIM_MODEL_ROUTINE_NAME_ComputeArgumentsCreate)
+    if (present && required) {
+      if (!(KIM_ModelRoutineName_Equal(modelRoutineName, KIM_MODEL_ROUTINE_NAME_Create)
+            || KIM_ModelRoutineName_Equal(modelRoutineName,
+                                          KIM_MODEL_ROUTINE_NAME_ComputeArgumentsCreate)
             || KIM_ModelRoutineName_Equal(modelRoutineName,
                                           KIM_MODEL_ROUTINE_NAME_Compute)
             || KIM_ModelRoutineName_Equal(modelRoutineName,
                                           KIM_MODEL_ROUTINE_NAME_Refresh)
-            || KIM_ModelRoutineName_Equal(
-                   modelRoutineName,
-                   KIM_MODEL_ROUTINE_NAME_ComputeArgumentsDestroy)
+            || KIM_ModelRoutineName_Equal(modelRoutineName,
+                                          KIM_MODEL_ROUTINE_NAME_ComputeArgumentsDestroy)
             || KIM_ModelRoutineName_Equal(modelRoutineName,
                                           KIM_MODEL_ROUTINE_NAME_Destroy))) {
         return true;

@@ -23,6 +23,8 @@ General howto
    Howto_library
    Howto_couple
    Howto_mdi
+   Howto_bpm
+   Howto_broken_bonds
 
 Settings howto
 ==============
@@ -32,6 +34,7 @@ Settings howto
    :maxdepth: 1
 
    Howto_2d
+   Howto_type_labels
    Howto_triclinic
    Howto_thermostat
    Howto_barostat
@@ -63,6 +66,7 @@ Force fields howto
    :maxdepth: 1
 
    Howto_bioFF
+   Howto_amoeba
    Howto_tip3p
    Howto_tip4p
    Howto_spc

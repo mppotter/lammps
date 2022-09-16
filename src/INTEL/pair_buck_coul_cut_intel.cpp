@@ -46,10 +46,6 @@ PairBuckCoulCutIntel::PairBuckCoulCutIntel(LAMMPS *lmp) :
   suffix_flag |= Suffix::INTEL;
 }
 
-PairBuckCoulCutIntel::~PairBuckCoulCutIntel()
-{
-}
-
 void PairBuckCoulCutIntel::compute(int eflag, int vflag)
 {
   if (fix->precision()==FixIntel::PREC_MODE_MIXED)
@@ -145,7 +141,7 @@ void PairBuckCoulCutIntel::eval(const int offload, const int vflag,
 
   const int * _noalias const ilist = list->ilist;
   const int * _noalias const numneigh = list->numneigh;
-  const int ** _noalias const firstneigh = (const int **)list->firstneigh;
+  const int ** _noalias const firstneigh = (const int **)list->firstneigh;  // NOLINT
 
   const flt_t * _noalias const special_coul = fc.special_coul;
   const flt_t * _noalias const special_lj = fc.special_lj;
@@ -269,7 +265,7 @@ void PairBuckCoulCutIntel::eval(const int offload, const int vflag,
           const flt_t delx = xtmp - x[j].x;
           const flt_t dely = ytmp - x[j].y;
           const flt_t delz = ztmp - x[j].z;
-          const int jtype = x[j].w;
+          const int jtype = IP_PRE_dword_index(x[j].w);
           const flt_t rsq = delx * delx + dely * dely + delz * delz;
           const flt_t r = sqrt(rsq);
           const flt_t r2inv = (flt_t)1.0 / rsq;
@@ -401,7 +397,7 @@ void PairBuckCoulCutIntel::eval(const int offload, const int vflag,
   if (EFLAG || vflag)
     fix->add_result_array(f_start, ev_global, offload, eatom, 0, vflag);
   else
-    fix->add_result_array(f_start, 0, offload);
+    fix->add_result_array(f_start, nullptr, offload);
 }
 
 /* ---------------------------------------------------------------------- */

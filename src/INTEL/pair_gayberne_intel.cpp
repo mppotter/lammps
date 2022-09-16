@@ -235,7 +235,7 @@ void PairGayBerneIntel::eval(const int offload, const int vflag,
 
   const int * _noalias const ilist = list->ilist;
   const int * _noalias const numneigh = list->numneigh;
-  const int ** _noalias const firstneigh = (const int **)list->firstneigh;
+  const int ** _noalias const firstneigh = (const int **)list->firstneigh;  // NOLINT
   const flt_t * _noalias const special_lj = fc.special_lj;
 
   const FC_PACKED1_T * _noalias const ijc = fc.ijc[0];
@@ -417,7 +417,7 @@ void PairGayBerneIntel::eval(const int offload, const int vflag,
         for (int jj = 0; jj < jnum; jj++) {
           int jm = jlist[jj];
           int j = jm & NEIGHMASK;
-          const int jtype = x[j].w;
+          const int jtype = IP_PRE_dword_index(x[j].w);
 
           if (ijci[jtype].form == ELLIPSE_ELLIPSE) {
             flt_t delx = x[j].x-xtmp;
@@ -473,7 +473,7 @@ void PairGayBerneIntel::eval(const int offload, const int vflag,
           const int sbindex = jlist_form[jj] >> SBBITS & 3;
           const int j = jlist_form[jj] & NEIGHMASK;
           flt_t factor_lj = special_lj[sbindex];
-          const int jtype = jtype_form[jj];
+          const int jtype = IP_PRE_dword_index(jtype_form[jj]);
           const flt_t sigma = ijci[jtype].sigma;
           const flt_t epsilon = ijci[jtype].epsilon;
           const flt_t shape2_0 = ic[jtype].shape2[0];
@@ -881,7 +881,7 @@ void PairGayBerneIntel::eval(const int offload, const int vflag,
   if (EFLAG || vflag)
     fix->add_result_array(f_start, ev_global, offload, eatom, 0, 2);
   else
-    fix->add_result_array(f_start, 0, offload, 0, 0, 2);
+    fix->add_result_array(f_start, nullptr, offload, 0, 0, 2);
 }
 
 /* ---------------------------------------------------------------------- */
