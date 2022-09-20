@@ -13,21 +13,21 @@
 
 #ifdef PAIR_CLASS
 // clang-format off
-PairStyle(lj/cut/bump/gpu,PairLJCutBumpGPU);
+PairStyle(lj/bump/smooth/linear/gpu,PairLJBumpSmoothLinearGPU);
 // clang-format on
 #else
 
-#ifndef LMP_PAIR_LJ_LIGHT_BUMP_GPU_H
-#define LMP_PAIR_LJ_LIGHT_BUMP_GPU_H
+#ifndef LMP_PAIR_LJ_LIGHT_BUMP_SMOOTH_LINEAR_GPU_H
+#define LMP_PAIR_LJ_LIGHT_BUMP_SMOOTH_LINEAR_GPU_H
 
-#include "pair_lj_cut_bump.h"
+#include "pair_lj_bump_smooth_linear.h"
 
 namespace LAMMPS_NS {
 
-class PairLJCutBumpGPU : public PairLJCutBump {
+class PairLJBumpSmoothLinearGPU : public PairLJBumpSmoothLinear {
  public:
-  PairLJCutBumpGPU(LAMMPS *lmp);
-  ~PairLJCutBumpGPU() override;
+  PairLJBumpSmoothLinearGPU(LAMMPS *lmp);
+  ~PairLJBumpSmoothLinearGPU() override;
   void cpu_compute(int, int, int, int, int *, int *, int **);
   void compute(int, int) override;
   void init_style() override;

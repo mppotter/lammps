@@ -13,7 +13,7 @@
 
 /* ----------------------------------------------------------------------
    Contributing author: Paul Crozier (SNL)
-   Updated for 29 Oct. 2020 stable LAMMPS release
+                        Mark Potter (RPI)
 ------------------------------------------------------------------------- */
 
 #include "pair_lj_cut_bump.h"
@@ -40,6 +40,7 @@ using namespace MathConst;
 PairLJCutBump::PairLJCutBump(LAMMPS *lmp) : Pair(lmp)
 {
   respa_enable = 1;
+  born_matrix_enable = 0;
   writedata = 1;
 }
 
@@ -131,17 +132,17 @@ void PairLJCutBump::compute(int eflag, int vflag)
           fpair += -energy_bump[itype][jtype]*MY_PI*sin(MY_PI*(end_bump[itype][jtype]+start_bump[itype][jtype]-rtmp-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]))/(end_bump[itype][jtype]-start_bump[itype][jtype])/rtmp;
         }
 
-        f[i][0] += delx*fpair;
-        f[i][1] += dely*fpair;
-        f[i][2] += delz*fpair;
+        f[i][0] += delx * fpair;
+        f[i][1] += dely * fpair;
+        f[i][2] += delz * fpair;
         if (newton_pair || j < nlocal) {
-          f[j][0] -= delx*fpair;
-          f[j][1] -= dely*fpair;
-          f[j][2] -= delz*fpair;
+          f[j][0] -= delx * fpair;
+          f[j][1] -= dely * fpair;
+          f[j][2] -= delz * fpair;
         }
 
         if (eflag) {
-          evdwl = r6inv*(lj3[itype][jtype]*r6inv-lj4[itype][jtype]) - offset[itype][jtype];
+          evdwl = r6inv * (lj3[itype][jtype] * r6inv - lj4[itype][jtype]) - offset[itype][jtype];
           //bump
           if(rtmp >= start_bump[itype][jtype] && rtmp <= end_bump[itype][jtype]) {
             btmp = sin(MY_PI*(end_bump[itype][jtype]-rtmp)/(end_bump[itype][jtype]-start_bump[itype][jtype]));
@@ -520,7 +521,7 @@ void PairLJCutBump::init_style()
   int list_style = NeighConst::REQ_DEFAULT;
 
   if (update->whichflag == 1 && utils::strmatch(update->integrate_style, "^respa")) {
-    auto respa = (Respa *) update->integrate;
+    auto respa = dynamic_cast<Respa *>(update->integrate);
     if (respa->level_inner >= 0) list_style = NeighConst::REQ_RESPA_INOUT;
     if (respa->level_middle >= 0) list_style = NeighConst::REQ_RESPA_ALL;
   }
@@ -529,8 +530,8 @@ void PairLJCutBump::init_style()
   // set rRESPA cutoffs
 
   if (utils::strmatch(update->integrate_style, "^respa") &&
-      ((Respa *) update->integrate)->level_inner >= 0)
-    cut_respa = ((Respa *) update->integrate)->cutoff;
+      (dynamic_cast<Respa *>(update->integrate))->level_inner >= 0)
+    cut_respa = (dynamic_cast<Respa *>(update->integrate))->cutoff;
   else
     cut_respa = nullptr;
 }
@@ -713,6 +714,26 @@ double PairLJCutBump::single(int /*i*/, int /*j*/, int itype, int jtype, double 
 }
 
 /* ---------------------------------------------------------------------- */
+
+void PairLJCutBump::born_matrix(int /*i*/, int /*j*/, int itype, int jtype, double rsq,
+                            double /*factor_coul*/, double factor_lj, double &dupair,
+                            double &du2pair)
+{
+  double rinv, r2inv, r6inv, du, du2;
+
+  r2inv = 1.0 / rsq;
+  rinv = sqrt(r2inv);
+  r6inv = r2inv * r2inv * r2inv;
+
+  // Reminder: lj1 = 48*e*s^12, lj2 = 24*e*s^6
+  // so dupair = -forcelj/r = -fforce*r (forcelj from single method)
+
+  du = r6inv * rinv * (lj2[itype][jtype] - lj1[itype][jtype] * r6inv);
+  du2 = r6inv * r2inv * (13 * lj1[itype][jtype] * r6inv - 7 * lj2[itype][jtype]);
+
+  dupair = factor_lj * du;
+  du2pair = factor_lj * du2;
+}
 
 void *PairLJCutBump::extract(const char *str, int &dim)
 {

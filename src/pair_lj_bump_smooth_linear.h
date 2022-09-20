@@ -13,52 +13,48 @@
 
 #ifdef PAIR_CLASS
 // clang-format off
-PairStyle(lj/cut/bump,PairLJCutBump);
+//PairStyle(lj/smooth/linear/bump,PairLJSmoothLinearBump)
+PairStyle(lj/bump/smooth/linear,PairLJBumpSmoothLinear)
 // clang-format on
 #else
 
-#ifndef LMP_PAIR_LJ_CUT_BUMP_H
-#define LMP_PAIR_LJ_CUT_BUMP_H
+#ifndef PAIR_LJ_BUMP_SMOOTH_LINEAR_H
+#define PAIR_LJ_BUMP_SMOOTH_LINEAR_H
 
 #include "pair.h"
 
 namespace LAMMPS_NS {
 
-class PairLJCutBump : public Pair {
+class PairLJBumpSmoothLinear : public Pair {
  public:
-  PairLJCutBump(class LAMMPS *);
-  ~PairLJCutBump() override;
+  PairLJBumpSmoothLinear(class LAMMPS *);
+  ~PairLJBumpSmoothLinear() override;
   void compute(int, int) override;
   void settings(int, char **) override;
   void coeff(int, char **) override;
-  void init_style() override;
   double init_one(int, int) override;
   void write_restart(FILE *) override;
   void read_restart(FILE *) override;
   void write_restart_settings(FILE *) override;
   void read_restart_settings(FILE *) override;
-  void write_data(FILE *) override;
-  void write_data_all(FILE *) override;
   double single(int, int, int, int, double, double, double, double &) override;
+  double single_hessian(int, int, int, int, double, double[3], double, double, double &,
+                        double[6]) override;
   void born_matrix(int, int, int, int, double, double, double, double &, double &) override;
-  void *extract(const char *, int &) override;
-
-  void compute_inner() override;
-  void compute_middle() override;
-  void compute_outer(int, int) override;
 
  protected:
   double cut_global;
   double **cut;
   double **epsilon, **sigma;
-  double **lj1, **lj2, **lj3, **lj4, **offset;
-  double *cut_respa;
+  double **ljcut, **dljcut;
+  double **lj1, **lj2, **lj3, **lj4;
 
-  double **start_bump; //INPUT is relative starting position (wrt sigma) for the bump
-  double **end_bump; //INPUT is relative ending position (wrt cutoff) for the bump
-  double **energy_bump; //INPUT is relative penalty energy (wrt epsilon) for the bump
+//modified part
+   double **start_bump; //INPUT is relative starting position (wrt sigma) for the bump
+   double **end_bump; //INPUT is relative ending position (wrt cutoff) for the bump
+   double **energy_bump; //INPUT is relative penalty energy (wrt epsilon) for the bump
 
-  virtual void allocate();
+  void allocate();
 };
 
 }    // namespace LAMMPS_NS
