@@ -97,15 +97,15 @@ int LJBumpSmoothLinearT::init(const int ntypes,
                          host_cutsq);
 
   lj3.alloc(lj_types*lj_types,*(this->ucl_device),UCL_READ_ONLY);
-  this->atom->type_pack2(ntypes,lj_types,lj3,host_write,host_lj3,host_lj4
-                         /*host_offset*/);
+  this->atom->type_pack4(ntypes,lj_types,lj3,host_write,host_lj3,host_lj4
+                         , host_cut /*host_offset*/);
 
   bump_data.alloc(lj_types*lj_types,*(this->ucl_device),UCL_READ_ONLY);
   this->atom->type_pack4(ntypes,lj_types,bump_data,host_write,host_start_bump,
                          host_end_bump,host_energy_bump);
 
   smooth_linear_data.alloc(lj_types*lj_types,*(this->ucl_device),UCL_READ_ONLY);
-  this->atom->type_pack4(ntypes,lj_types,lj3,host_write,
+  this->atom->type_pack4(ntypes,lj_types,smooth_linear_data,host_write,
                          host_ljcut,host_dljcut,host_cut);
 
   UCL_H_Vec<double> dview;
@@ -114,7 +114,8 @@ int LJBumpSmoothLinearT::init(const int ntypes,
   ucl_copy(sp_lj,dview,false);
 
   _allocated=true;
-  this->_max_bytes=lj1.row_bytes()+lj3.row_bytes()+sp_lj.row_bytes();
+  this->_max_bytes=lj1.row_bytes()+lj3.row_bytes()+sp_lj.row_bytes()
+                      +bump_data.row_bytes()+smooth_linear_data.row_bytes();
   return 0;
 }
 
@@ -135,8 +136,8 @@ void LJBumpSmoothLinearT::reinit(const int ntypes, double **host_cutsq, double *
 
   this->atom->type_pack4(ntypes,_lj_types,lj1,host_write,host_lj1,host_lj2,
                          host_cutsq);
-  this->atom->type_pack2(ntypes,_lj_types,lj3,host_write,host_lj3,host_lj4
-                         /*host_offset*/);
+  this->atom->type_pack4(ntypes,_lj_types,lj3,host_write,host_lj3,host_lj4,
+                         host_cut /*host_offset*/);
   this->atom->type_pack4(ntypes,_lj_types,bump_data,host_write,host_start_bump,
                          host_end_bump,host_energy_bump);
   this->atom->type_pack4(ntypes,_lj_types,lj3,host_write,host_ljcut,

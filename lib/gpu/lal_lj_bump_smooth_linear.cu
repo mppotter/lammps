@@ -46,7 +46,7 @@ __kernel void k_lj_bump_smooth_linear(const __global numtyp4 *restrict x_,
   local_allocate_store_pair();
 
   // for bump
-  numtyp rtmp, btmp;
+  numtyp r, btmp;
   numtyp rinv;
 
   acctyp4 f;
@@ -83,17 +83,17 @@ __kernel void k_lj_bump_smooth_linear(const __global numtyp4 *restrict x_,
 
       int mtype=itype*lj_types+jtype;
       if (r2inv<lj1[mtype].z) {
+        r = ucl_sqrt(r2inv);
         r2inv = ucl_recip(r2inv); // This makes r2inv the actual r^2 inverse
-        rtmp = rsqrt(r2inv);
-        rinv = ucl_recip(rtmp);
+        rinv = ucl_recip(r);
         numtyp r6inv = r2inv*r2inv*r2inv;
         numtyp force = r6inv*(lj1[mtype].x*r6inv-lj1[mtype].y);
-        force = rinv*force - smooth_linear_data[mtype].y;
-        force*=factor_lj*rinv;
+        force = rinv*(rinv*force - smooth_linear_data[mtype].y);
+        force*=factor_lj;
 
         // for bump
-        if(rtmp >= bump_data[mtype].x && rtmp <= bump_data[mtype].y) {
-            force += -bump_data[mtype].z*M_PI*sinpi((bump_data[mtype].y+bump_data[mtype].x-rtmp-rtmp)/(bump_data[mtype].y-bump_data[mtype].x))/(bump_data[mtype].y-bump_data[mtype].x)/rtmp;
+        if(r >= bump_data[mtype].x && r <= bump_data[mtype].y) {
+            force += -bump_data[mtype].z*M_PI*sinpi((bump_data[mtype].y+bump_data[mtype].x-r-r)/(bump_data[mtype].y-bump_data[mtype].x))/(bump_data[mtype].y-bump_data[mtype].x)/r;
         }
 
         f.x+=delx*force;
@@ -103,13 +103,13 @@ __kernel void k_lj_bump_smooth_linear(const __global numtyp4 *restrict x_,
         if (EVFLAG && eflag) {
           numtyp e=r6inv*(lj3[mtype].x*r6inv-lj3[mtype].y);
           e-=smooth_linear_data[mtype].x
-             +(rtmp-smooth_linear_data[mtype].z)*smooth_linear_data[mtype].y;
+             -(r-smooth_linear_data[mtype].z)*smooth_linear_data[mtype].y;
           //bump
-          if(rtmp >= bump_data[mtype].x && rtmp <= bump_data[mtype].y) {
-            btmp = sinpi((bump_data[mtype].y-rtmp)/(bump_data[mtype].y-bump_data[mtype].x));
+          if(r >= bump_data[mtype].x && r <= bump_data[mtype].y) {
+            btmp = sinpi((bump_data[mtype].y-r)/(bump_data[mtype].y-bump_data[mtype].x));
             e += bump_data[mtype].z*btmp*btmp;
           }
-          // energy+=factor_lj*(e-lj3[mtype].z);
+          energy+=e; //factor_lj*(e-lj3[mtype].z);
         }
         if (EVFLAG && vflag) {
           virial[0] += delx*delx*force;
@@ -143,8 +143,9 @@ __kernel void k_lj_bump_smooth_linear_fast(const __global numtyp4 *restrict x_,
   atom_info(t_per_atom,ii,tid,offset);
 
   // for bump
-  numtyp rtmp, btmp;
+  numtyp r, btmp;
   numtyp rinv;
+  
   #ifndef ONETYPE
   __local numtyp4 lj1[MAX_SHARED_TYPES*MAX_SHARED_TYPES];
   __local numtyp4 lj3[MAX_SHARED_TYPES*MAX_SHARED_TYPES];
@@ -156,7 +157,7 @@ __kernel void k_lj_bump_smooth_linear_fast(const __global numtyp4 *restrict x_,
   if (tid<MAX_SHARED_TYPES*MAX_SHARED_TYPES) {
     lj1[tid]=lj1_in[tid];
     bump_data[tid]=bump_data_in[tid];
-    smooth_linear_data[tid] = smooth_linear_data_in[tid];
+    smooth_linear_data[tid]=smooth_linear_data_in[tid];
     if (EVFLAG && eflag)
       lj3[tid]=lj3_in[tid];
   }
@@ -171,11 +172,11 @@ __kernel void k_lj_bump_smooth_linear_fast(const __global numtyp4 *restrict x_,
   const numtyp slx=smooth_linear_data_in[ONETYPE].x;
   const numtyp sly=smooth_linear_data_in[ONETYPE].y;
   const numtyp slz=smooth_linear_data_in[ONETYPE].z;
-  numtyp lj3x, lj3y, lj3z;
+  numtyp lj3x, lj3y; //, lj3z;
   if (EVFLAG && eflag) {
     lj3x=lj3_in[ONETYPE].x;
     lj3y=lj3_in[ONETYPE].y;
-    lj3z=lj3_in[ONETYPE].z;
+    //lj3z=lj3_in[ONETYPE].z;
   }
   #endif
 
@@ -233,19 +234,22 @@ __kernel void k_lj_bump_smooth_linear_fast(const __global numtyp4 *restrict x_,
         numtyp sly=smooth_linear_data[mtype].y;
         numtyp slz=smooth_linear_data[mtype].z;
         #endif
+        r = ucl_sqrt(r2inv);
         r2inv = ucl_recip(r2inv); // This makes r2inv the actual r^2 inverse
-        rtmp = rsqrt(r2inv);
-        rinv = ucl_recip(rtmp);
+        rinv = ucl_recip(r);
         numtyp r6inv = r2inv*r2inv*r2inv;
         numtyp force = r6inv*(lj1x*r6inv-lj1y);
-        force = rinv*force - sly;
+        force = rinv*(rinv*force - sly);
         #ifndef ONETYPE
-        force*=factor_lj*rinv;
+        force*=factor_lj;
         #endif
 
+        numtyp inv_bdiff;
+
         // for bump
-        if(rtmp >= bumpx && rtmp <= bumpy) {
-            force += -bumpz*M_PI*sinpi((bumpy+bumpx-rtmp-rtmp)/(bumpy-bumpx))/(bumpy-bumpx)/rtmp;
+        if(r >= bumpx && r <= bumpy) {
+            inv_bdiff = ucl_recip(bumpy-bumpx);
+            force += -bumpz*M_PI*sinpi((bumpy+bumpx-r-r)*inv_bdiff)*inv_bdiff*rinv;
         }
 
         f.x+=delx*force;
@@ -256,20 +260,21 @@ __kernel void k_lj_bump_smooth_linear_fast(const __global numtyp4 *restrict x_,
             #ifndef ONETYPE
             numtyp lj3x=lj3[mtype].x;
             numtyp lj3y=lj3[mtype].y;
-            numtyp lj3z=lj3[mtype].z;
+            //numtyp lj3z=lj3[mtype].z;
             #endif
             numtyp e=r6inv*(lj3x*r6inv-lj3y);
-            e-=slx+(rtmp-slz)*sly;
+            e -= slx - (r-slz)*sly;
             //bump
-            if(rtmp >= bumpx && rtmp <= bumpy) {
-                btmp = sinpi((bumpy-rtmp)/(bumpy-bumpx));
+            if(r >= bumpx && r <= bumpy) {
+                btmp = sinpi((bumpy-r)*inv_bdiff);
                 e += bumpz*btmp*btmp;
             }
           #ifndef ONETYPE
-          energy+=factor_lj*(e-lj3z);
+          energy+=(e); //factor_lj*(e);//-lj3z);
           #else
-          energy+=(e-lj3z);
+          energy+=(e); //-lj3z);
           #endif
+          
         }
         if (EVFLAG && vflag) {
           virial[0] += delx*delx*force;
