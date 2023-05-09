@@ -1,7 +1,7 @@
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
-   Steve Plimpton, sjplimp@sandia.gov
+   LAMMPS development team: developers@lammps.org
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
    DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
@@ -95,6 +95,7 @@ typedef int64_t bigint;
 #define MAXSMALLINT INT_MAX
 #define MAXTAGINT INT_MAX
 #define MAXBIGINT INT64_MAX
+#define MAXDOUBLEINT 9007199254740992   // 2^53
 
 #define MPI_LMP_TAGINT MPI_INT
 #define MPI_LMP_IMAGEINT MPI_INT
@@ -132,6 +133,7 @@ typedef int64_t bigint;
 #define MAXSMALLINT INT_MAX
 #define MAXTAGINT INT64_MAX
 #define MAXBIGINT INT64_MAX
+#define MAXDOUBLEINT 9007199254740992   // 2^53
 
 #define MPI_LMP_TAGINT MPI_LL
 #define MPI_LMP_IMAGEINT MPI_LL
@@ -168,6 +170,7 @@ typedef int bigint;
 #define MAXSMALLINT INT_MAX
 #define MAXTAGINT INT_MAX
 #define MAXBIGINT INT_MAX
+#define MAXDOUBLEINT INT_MAX
 
 #define MPI_LMP_TAGINT MPI_INT
 #define MPI_LMP_IMAGEINT MPI_INT
