@@ -100,6 +100,7 @@ KOKKOS, o = OPENMP, t = OPT.
    * :doc:`nbond/atom <compute_nbond_atom>`
    * :doc:`omega/chunk <compute_omega_chunk>`
    * :doc:`orientorder/atom (k) <compute_orientorder_atom>`
+   * :doc:`pace <compute_pace>`
    * :doc:`pair <compute_pair>`
    * :doc:`pair/local <compute_pair_local>`
    * :doc:`pe <compute_pe>`
@@ -107,6 +108,10 @@ KOKKOS, o = OPENMP, t = OPT.
    * :doc:`pe/mol/tally <compute_tally>`
    * :doc:`pe/tally <compute_tally>`
    * :doc:`plasticity/atom <compute_plasticity_atom>`
+   * :doc:`pod/atom <compute_pod_atom>`
+   * :doc:`podd/atom <compute_pod_atom>`
+   * :doc:`pod/local <compute_pod_atom>`
+   * :doc:`pod/global <compute_pod_atom>`
    * :doc:`pressure <compute_pressure>`
    * :doc:`pressure/alchemy <compute_pressure_alchemy>`
    * :doc:`pressure/uef <compute_pressure_uef>`
@@ -115,12 +120,16 @@ KOKKOS, o = OPENMP, t = OPT.
    * :doc:`property/grid <compute_property_grid>`
    * :doc:`property/local <compute_property_local>`
    * :doc:`ptm/atom <compute_ptm_atom>`
+   * :doc:`rattlers/atom <compute_rattlers_atom>`
    * :doc:`rdf <compute_rdf>`
+   * :doc:`reaxff/atom (k) <compute_reaxff_atom>`
    * :doc:`reduce <compute_reduce>`
    * :doc:`reduce/chunk <compute_reduce_chunk>`
    * :doc:`reduce/region <compute_reduce>`
+   * :doc:`rheo/property/atom <compute_rheo_property_atom>`
    * :doc:`rigid/local <compute_rigid_local>`
    * :doc:`saed <compute_saed>`
+   * :doc:`slcsa/atom <compute_slcsa_atom>`
    * :doc:`slice <compute_slice>`
    * :doc:`smd/contact/radius <compute_smd_contact_radius>`
    * :doc:`smd/damage <compute_smd_damage>`

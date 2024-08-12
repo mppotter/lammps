@@ -221,7 +221,7 @@ KOKKOS_INLINE_FUNCTION bool dyn_rank_view_verify_operator_bounds(
     return (size_t(i) < map.extent(R)) &&
            dyn_rank_view_verify_operator_bounds<R + 1>(rank, map, args...);
   } else if (i != 0) {
-    KOKKOS_IMPL_DO_NOT_USE_PRINTF(
+    Kokkos::printf(
         "DynRankView Debug Bounds Checking Error: at rank %u\n  Extra "
         "arguments beyond the rank must be zero \n",
         R);
@@ -1340,7 +1340,7 @@ class ViewMapping<
 
   template <class MemoryTraits>
   struct apply {
-    static_assert(Kokkos::is_memory_traits<MemoryTraits>::value, "");
+    static_assert(Kokkos::is_memory_traits<MemoryTraits>::value);
 
     using traits_type =
         Kokkos::ViewTraits<data_type, array_layout,
@@ -1653,8 +1653,17 @@ KOKKOS_FUNCTION auto as_view_of_rank_n(
         Kokkos::abort("Converting DynRankView to a View of mis-matched rank!");)
   }
 
-  return View<typename RankDataType<T, N>::type, Args...>(
-      v.data(), v.impl_map().layout());
+  auto layout = v.impl_map().layout();
+
+  if constexpr (std::is_same_v<decltype(layout), Kokkos::LayoutLeft> ||
+                std::is_same_v<decltype(layout), Kokkos::LayoutRight> ||
+                std::is_same_v<decltype(layout), Kokkos::LayoutStride> ||
+                is_layouttiled<decltype(layout)>::value) {
+    for (int i = N; i < 7; ++i)
+      layout.dimension[i] = KOKKOS_IMPL_CTOR_DEFAULT_ARG;
+  }
+
+  return View<typename RankDataType<T, N>::type, Args...>(v.data(), layout);
 }
 
 template <typename Function, typename... Args>

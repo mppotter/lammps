@@ -27,9 +27,7 @@
 #include "memory.h"
 #include "modify.h"
 #include "neigh_list.h"
-#include "pair.h"
 #include "respa.h"
-#include "suffix.h"
 #include "text_file_reader.h"
 #include "update.h"
 
@@ -75,6 +73,9 @@ FixQEq::FixQEq(LAMMPS *lmp, int narg, char **arg) :
   // check for sane arguments
   if ((nevery <= 0) || (cutoff <= 0.0) || (tolerance <= 0.0) || (maxiter <= 0))
     error->all(FLERR,"Illegal fix qeq command");
+
+  // must have charges
+  if (!atom->q_flag) error->all(FLERR, "Fix {} requires atom attribute q", style);
 
   alpha = 0.20;
   swa = 0.0;
@@ -337,12 +338,6 @@ void FixQEq::setup_pre_force(int vflag)
 {
   if (force->newton_pair == 0)
     error->all(FLERR,"QEQ with 'newton pair off' not supported");
-
-  if (force->pair) {
-    if (force->pair->suffix_flag & (Suffix::INTEL|Suffix::GPU))
-      error->all(FLERR,"QEQ is not compatiple with suffix version "
-                 "of pair style");
-  }
 
   deallocate_storage();
   allocate_storage();
@@ -768,11 +763,12 @@ void FixQEq::read_file(char *file)
       chi[n] = eta[n] = gamma[n] = zeta[n] = zcore[n] = 0.0;
     }
 
+    FILE *fp = nullptr;
     try {
       int nlo,nhi;
       double val;
 
-      FILE *fp = utils::open_potential(file,lmp,nullptr);
+      fp = utils::open_potential(file,lmp,nullptr);
       if (fp == nullptr)
         throw qeq_parser_error(fmt::format("Cannot open fix qeq parameter file {}: {}",
                                            file,utils::getsyserror()));
@@ -803,7 +799,7 @@ void FixQEq::read_file(char *file)
         for (int n=nlo; n <= nhi; ++n) setflag[n] = 1;
       }
     } catch (EOFException &) {
-      ; // catch and ignore to exit loop
+      fclose(fp);
     } catch (std::exception &e) {
       error->one(FLERR,e.what());
     }

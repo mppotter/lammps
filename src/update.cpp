@@ -46,7 +46,9 @@ template <typename T> static Min *minimize_creator(LAMMPS *lmp)
 
 /* ---------------------------------------------------------------------- */
 
-Update::Update(LAMMPS *lmp) : Pointers(lmp)
+Update::Update(LAMMPS *lmp) :
+    Pointers(lmp), unit_style(nullptr), integrate(nullptr), integrate_style(nullptr),
+    minimize(nullptr), minimize_style(nullptr), integrate_map(nullptr), minimize_map(nullptr)
 {
   char *str;
 
@@ -61,19 +63,14 @@ Update::Update(LAMMPS *lmp) : Pointers(lmp)
   restrict_output = 0;
   setupflag = 0;
   multireplica = 0;
+  nsteps = 0;
 
   eflag_global = vflag_global = -1;
   eflag_atom = vflag_atom = 0;
 
   dt_default = 1;
   dt = 0.0;
-  unit_style = nullptr;
   set_units("lj");
-
-  integrate_style = nullptr;
-  integrate = nullptr;
-  minimize_style = nullptr;
-  minimize = nullptr;
 
   integrate_map = new IntegrateCreatorMap();
 
@@ -332,6 +329,9 @@ void Update::create_integrate(int narg, char **arg, int trysuffix)
 
   delete[] integrate_style;
   delete integrate;
+  // temporarily assign the style name without suffix (for error messages during creation)
+  integrate_style = utils::strdup(arg[0]);
+  integrate = nullptr;
 
   int sflag;
 
@@ -351,6 +351,7 @@ void Update::create_integrate(int narg, char **arg, int trysuffix)
     else if ((sflag == 3) && lmp->non_pair_suffix())
       estyle += lmp->non_pair_suffix();
   }
+  delete[] integrate_style;
   integrate_style = utils::strdup(estyle);
 }
 
@@ -400,9 +401,9 @@ void Update::create_minimize(int narg, char **arg, int trysuffix)
 
   delete[] minimize_style;
   delete minimize;
-
   // temporarily assign the style name without suffix (for error messages during creation)
-  minimize_style = arg[0];
+  minimize_style = utils::strdup(arg[0]);
+  minimize = nullptr;
 
   int sflag;
   new_minimize(arg[0], narg - 1, &arg[1], trysuffix, sflag);
@@ -417,6 +418,7 @@ void Update::create_minimize(int narg, char **arg, int trysuffix)
     else if ((sflag == 3) && lmp->non_pair_suffix())
       estyle += lmp->non_pair_suffix();
   }
+  delete[] minimize_style;
   minimize_style = utils::strdup(estyle);
 }
 

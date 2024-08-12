@@ -24,12 +24,7 @@
 
 using namespace LAMMPS_NS;
 
-#define MAXLINE 1024        // max line length in dump file
-
-// also in read_dump.cpp
-
-enum{ID,TYPE,X,Y,Z,VX,VY,VZ,Q,IX,IY,IZ,FX,FY,FZ};
-enum{UNSET,NOSCALE_NOWRAP,NOSCALE_WRAP,SCALE_NOWRAP,SCALE_WRAP};
+static constexpr int MAXLINE = 1024;        // max line length in dump file
 
 /* ---------------------------------------------------------------------- */
 
@@ -259,7 +254,7 @@ bigint ReaderNative::read_header(double box[3][3], int &boxinfo, int &triclinic,
     triclinic = 0;
     box[0][2] = box[1][2] = box[2][2] = 0.0;
     read_lines(1);
-    if (line[strlen("ITEM: BOX BOUNDS ")] == 'x') triclinic = 1;
+    if (utils::strmatch(line,"ITEM: BOX BOUNDS.*xy\\s+xz\\s+yz")) triclinic = 1;
 
     try {
       read_lines(1);
@@ -294,7 +289,7 @@ bigint ReaderNative::read_header(double box[3][3], int &boxinfo, int &triclinic,
     labelline = line + strlen("ITEM: ATOMS ");
   }
 
-  Tokenizer tokens(labelline);
+  Tokenizer tokens(std::move(labelline));
   std::map<std::string, int> labels;
   nwords = 0;
 
@@ -489,7 +484,7 @@ void ReaderNative::read_atoms(int n, int nfield, double **fields)
       // convert selected fields to floats
 
       for (int m = 0; m < nfield; m++)
-        fields[i][m] = atof(words[fieldindex[m]].c_str());
+        fields[i][m] = std::stod(words[fieldindex[m]]);
     }
   }
 }

@@ -106,7 +106,7 @@ Global, per-atom, local, and per-grid quantities can also be of three
 for each atom, each local entity, or each grid cell.
 
 Note that a single fix can produce any combination of global,
-per-atom, local, or per-grid values.  Likewise it can prouduce any
+per-atom, local, or per-grid values.  Likewise it can produce any
 combination of scalar, vector, or array output for each style.  The
 exception is that for per-atom, local, and per-grid output, either a
 vector or array can be produced, but not both.  The doc page for each
@@ -193,6 +193,7 @@ accelerated styles exist.
 * :doc:`adapt <fix_adapt>` - change a simulation parameter over time
 * :doc:`adapt/fep <fix_adapt_fep>` - enhanced version of fix adapt
 * :doc:`addforce <fix_addforce>` - add a force to each atom
+* :doc:`add/heat <fix_add_heat>` - add a heat flux to each atom
 * :doc:`addtorque <fix_addtorque>` - add a torque to a group of atoms
 * :doc:`alchemy <fix_alchemy>` - perform an "alchemical transformation" between two partitions
 * :doc:`amoeba/bitorsion <fix_amoeba_bitorsion>` - torsion/torsion terms in AMOEBA force field
@@ -226,6 +227,7 @@ accelerated styles exist.
 * :doc:`controller <fix_controller>` - apply control loop feedback mechanism
 * :doc:`damping/cundall <fix_damping_cundall>` - Cundall non-viscous damping for granular simulations
 * :doc:`deform <fix_deform>` - change the simulation box size/shape
+* :doc:`deform/pressure <fix_deform_pressure>` - change the simulation box size/shape with additional loading conditions
 * :doc:`deposit <fix_deposit>` - add new atoms above a surface
 * :doc:`dpd/energy <fix_dpd_energy>` - constant energy dissipative particle dynamics
 * :doc:`drag <fix_drag>` - drag atoms towards a defined coordinate
@@ -287,6 +289,7 @@ accelerated styles exist.
 * :doc:`mvv/tdpd <fix_mvv_dpd>` - constant temperature DPD using the modified velocity-Verlet algorithm
 * :doc:`neb <fix_neb>` - nudged elastic band (NEB) spring forces
 * :doc:`neb/spin <fix_neb_spin>` - nudged elastic band (NEB) spring forces for spins
+* :doc:`nonaffine/displacement <fix_nonaffine_displacement>` - calculate nonaffine displacement of atoms
 * :doc:`nph <fix_nh>` - constant NPH time integration via Nose/Hoover
 * :doc:`nph/asphere <fix_nph_asphere>` - NPH for aspherical particles
 * :doc:`nph/body <fix_nph_body>` - NPH for body particles
@@ -367,6 +370,11 @@ accelerated styles exist.
 * :doc:`reaxff/species <fix_reaxff_species>` - write out ReaxFF molecule information
 * :doc:`recenter <fix_recenter>` - constrain the center-of-mass position of a group of atoms
 * :doc:`restrain <fix_restrain>` - constrain a bond, angle, dihedral
+* :doc:`rheo <fix_rheo>` - integrator for the RHEO package
+* :doc:`rheo/thermal <fix_rheo_thermal>` - thermal integrator for the RHEO package
+* :doc:`rheo/oxidation <fix_rheo_oxidation>` - create oxidation bonds for the RHEO package
+* :doc:`rheo/pressure <fix_rheo_pressure>` - pressure calculation for the RHEO package
+* :doc:`rheo/viscosity <fix_rheo_pressure>` - viscosity calculation for the RHEO package
 * :doc:`rhok <fix_rhok>` - add bias potential for long-range ordered systems
 * :doc:`rigid <fix_rigid>` - constrain one or more clusters of atoms to move as a rigid body with NVE integration
 * :doc:`rigid/meso <fix_rigid_meso>` - constrain clusters of mesoscopic SPH/SDPD particles to move as a rigid body
@@ -426,6 +434,7 @@ accelerated styles exist.
 * :doc:`wall/body/polyhedron <fix_wall_body_polyhedron>` - time integration for body particles of style :doc:`rounded/polyhedron <Howto_body>`
 * :doc:`wall/colloid <fix_wall>` - Lennard-Jones wall interacting with finite-size particles
 * :doc:`wall/ees <fix_wall_ees>` - wall for ellipsoidal particles
+* :doc:`wall/flow <fix_wall_flow>` - flow boundary conditions
 * :doc:`wall/gran <fix_wall_gran>` - frictional wall(s) for granular simulations
 * :doc:`wall/gran/region <fix_wall_gran_region>` - :doc:`fix wall/region <fix_wall_region>` equivalent for use with granular particles
 * :doc:`wall/harmonic <fix_wall>` - harmonic spring wall

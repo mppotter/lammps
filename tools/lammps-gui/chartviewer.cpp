@@ -17,6 +17,10 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QChart>
+#include <QCloseEvent>
+#include <QComboBox>
+#include <QEvent>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QKeySequence>
@@ -30,11 +34,17 @@
 #include <QSpacerItem>
 #include <QTextStream>
 #include <QVBoxLayout>
+#include <QValueAxis>
+#include <QVariant>
+
+#include <cmath>
 
 using namespace QtCharts;
 
 ChartWindow::ChartWindow(const QString &_filename, QWidget *parent) :
-    QWidget(parent), menu(new QMenuBar), file(new QMenu("&File")), filename(_filename)
+    QWidget(parent), menu(new QMenuBar), file(new QMenu("&File")), saveAsAct(nullptr),
+    exportCsvAct(nullptr), exportDatAct(nullptr), exportYamlAct(nullptr), closeAct(nullptr),
+    stopAct(nullptr), quitAct(nullptr), filename(_filename)
 {
     auto *top = new QHBoxLayout;
     menu->addMenu(file);
@@ -59,6 +69,8 @@ ChartWindow::ChartWindow(const QString &_filename, QWidget *parent) :
     exportCsvAct->setIcon(QIcon(":/icons/application-calc.png"));
     exportDatAct = file->addAction("Export data to &Gnuplot...", this, &ChartWindow::exportDat);
     exportDatAct->setIcon(QIcon(":/icons/application-plot.png"));
+    exportYamlAct = file->addAction("Export data to &YAML...", this, &ChartWindow::exportYaml);
+    exportYamlAct->setIcon(QIcon(":/icons/yaml-file-icon.png"));
     file->addSeparator();
     stopAct = file->addAction("Stop &Run", this, &ChartWindow::stop_run);
     stopAct->setIcon(QIcon(":/icons/process-stop.png"));
@@ -86,9 +98,9 @@ int ChartWindow::get_step() const
     if (charts.size() > 0) {
         auto *v = charts[0];
         if (v)
-          return (int)v->get_step(v->get_count() - 1);
+            return (int)v->get_step(v->get_count() - 1);
         else
-          return -1;
+            return -1;
     } else {
         return -1;
     }
@@ -136,7 +148,7 @@ void ChartWindow::quit()
 void ChartWindow::reset_zoom()
 {
     int choice = columns->currentData().toInt();
-    charts[choice]->reset_zoom();
+    if ((choice >= 0) && (choice < charts.size())) charts[choice]->reset_zoom();
 }
 
 void ChartWindow::stop_run()
@@ -225,6 +237,40 @@ void ChartWindow::exportCsv()
         }
     }
 }
+void ChartWindow::exportYaml()
+{
+    if (charts.empty()) return;
+    QString defaultname = filename + ".yaml";
+    if (filename.isEmpty()) defaultname = "lammpsdata.yaml";
+    QString fileName = QFileDialog::getSaveFileName(this, "Save Chart as YAML data", defaultname,
+                                                    "Image Files (*.yaml, *.yml)");
+    if (!fileName.isEmpty()) {
+        QFile file(fileName);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&file);
+            out.setRealNumberPrecision(8);
+            out << "---\n";
+
+            out << "keywords: ['Step'";
+            for (auto &c : charts)
+                out << ", " << c->get_title();
+            out << "]\n";
+
+            out << "data: \n";
+            int lines = charts[0]->get_count();
+            for (int i = 0; i < lines; ++i) {
+                // timestep
+                out << "  - [" << charts[0]->get_step(i);
+                // data
+                for (auto &c : charts)
+                    out << ", " << c->get_data(i);
+                out << "]\n";
+            }
+            out << "...\n";
+            file.close();
+        }
+    }
+}
 
 void ChartWindow::change_chart(int)
 {
@@ -251,7 +297,7 @@ void ChartWindow::closeEvent(QCloseEvent *event)
 bool ChartWindow::eventFilter(QObject *watched, QEvent *event)
 {
     if (event->type() == QEvent::ShortcutOverride) {
-        QKeyEvent *keyEvent = dynamic_cast<QKeyEvent *>(event);
+        auto *keyEvent = dynamic_cast<QKeyEvent *>(event);
         if (!keyEvent) return QWidget::eventFilter(watched, event);
         if (keyEvent->modifiers().testFlag(Qt::ControlModifier) && keyEvent->key() == '/') {
             stop_run();
@@ -300,20 +346,7 @@ void ChartViewer::add_data(int step, double data)
     if (last_step < step) {
         last_step = step;
         series->append(step, data);
-        auto points = series->points();
-
-        qreal xmin = 1.0e100;
-        qreal xmax = -1.0e100;
-        qreal ymin = 1.0e100;
-        qreal ymax = -1.0e100;
-        for (auto &p : points) {
-            xmin = qMin(xmin, p.x());
-            xmax = qMax(xmax, p.x());
-            ymin = qMin(ymin, p.y());
-            ymax = qMax(ymax, p.y());
-        }
-        xaxis->setRange(xmin, xmax);
-        yaxis->setRange(ymin, ymax);
+        reset_zoom();
     }
 }
 
@@ -333,6 +366,30 @@ void ChartViewer::reset_zoom()
         ymin = qMin(ymin, p.y());
         ymax = qMax(ymax, p.y());
     }
+
+    // avoid (nearly) empty ranges
+    double deltax = xmax - xmin;
+    if ((deltax / ((xmax == 0.0) ? 1.0 : xmax)) < 1.0e-10) {
+        if ((xmin == 0.0) || (xmax == 0.0)) {
+            xmin = -0.025;
+            xmax = 0.025;
+        } else {
+            xmin -= 0.025 * fabs(xmin);
+            xmax += 0.025 * fabs(xmax);
+        }
+    }
+
+    double deltay = ymax - ymin;
+    if ((deltay / ((ymax == 0.0) ? 1.0 : ymax)) < 1.0e-10) {
+        if ((ymin == 0.0) || (ymax == 0.0)) {
+            ymin = -0.025;
+            ymax = 0.025;
+        } else {
+            ymin -= 0.025 * fabs(ymin);
+            ymax += 0.025 * fabs(ymax);
+        }
+    }
+
     xaxis->setRange(xmin, xmax);
     yaxis->setRange(ymin, ymax);
 }

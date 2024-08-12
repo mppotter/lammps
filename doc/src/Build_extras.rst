@@ -59,6 +59,7 @@ This is the list of packages that may require additional steps.
    * :ref:`POEMS <poems>`
    * :ref:`PYTHON <python>`
    * :ref:`QMMM <qmmm>`
+   * :ref:`RHEO <rheo>`
    * :ref:`SCAFACOS <scafacos>`
    * :ref:`VORONOI <voronoi>`
    * :ref:`VTK <vtk>`
@@ -533,9 +534,6 @@ They must be specified in uppercase.
    *  - A64FX
       - HOST
       - ARMv8.2 with SVE Support
-   *  - WSM
-      - HOST
-      - Intel Westmere CPU (SSE 4.2)
    *  - SNB
       - HOST
       - Intel Sandy/Ivy Bridge CPU (AVX 1)
@@ -566,18 +564,15 @@ They must be specified in uppercase.
    *  - KNL
       - HOST
       - Intel Knights Landing Xeon Phi
-   *  - BGQ
-      - HOST
-      - IBM Blue Gene/Q CPU
-   *  - POWER7
-      - HOST
-      - IBM POWER7 CPU
    *  - POWER8
       - HOST
       - IBM POWER8 CPU
    *  - POWER9
       - HOST
       - IBM POWER9 CPU
+   *  - RISCV_SG2042
+      - HOST
+      - SG2042 (RISC-V) CPU
    *  - KEPLER30
       - GPU
       - NVIDIA Kepler generation CC 3.0 GPU
@@ -626,24 +621,27 @@ They must be specified in uppercase.
    *  - HOPPER90
       - GPU
       - NVIDIA Hopper generation CC 9.0 GPU
-   *  - VEGA900
+   *  - AMD_GFX906
       - GPU
-      - AMD GPU MI25 GFX900
-   *  - VEGA906
+      - AMD GPU MI50/MI60
+   *  - AMD_GFX908
       - GPU
-      - AMD GPU MI50/MI60 GFX906
-   *  - VEGA908
+      - AMD GPU MI100
+   *  - AMD_GFX90A
       - GPU
-      - AMD GPU MI100 GFX908
-   *  - VEGA90A
+      - AMD GPU MI200
+   *  - AMD_GFX942
       - GPU
-      - AMD GPU MI200 GFX90A
-   *  - NAVI1030
+      - AMD GPU MI300
+   *  - AMD_GFX1030
       - GPU
       - AMD GPU V620/W6800
-   *  - NAVI1100
+   *  - AMD_GFX1100
       - GPU
       - AMD GPU RX7900XTX
+   *  - AMD_GFX1103
+      - GPU
+      - AMD Phoenix APU with Radeon 740M/760M/780M/880M/890M
    *  - INTEL_GEN
       - GPU
       - SPIR64-based devices, e.g. Intel GPUs, using JIT
@@ -666,7 +664,7 @@ They must be specified in uppercase.
       - GPU
       - Intel GPU Ponte Vecchio
 
-This list was last updated for version 4.0.1 of the Kokkos library.
+This list was last updated for version 4.3.0 of the Kokkos library.
 
 .. tabs::
 
@@ -1056,12 +1054,12 @@ additional details.
 
       .. code-block:: bash
 
-         -D PYTHON_EXECUTABLE=path   # path to Python executable to use
+         -D Python_EXECUTABLE=path   # path to Python executable to use
 
       Without this setting, CMake will guess the default Python version
       on your system.  To use a different Python version, you can either
       create a virtualenv, activate it and then run cmake.  Or you can
-      set the PYTHON_EXECUTABLE variable to specify which Python
+      set the Python_EXECUTABLE variable to specify which Python
       interpreter should be used.  Note note that you will also need to
       have the development headers installed for this version,
       e.g. python2-devel.
@@ -1572,10 +1570,11 @@ LAMMPS build.
    .. tab:: CMake build
 
       When the ``-D PKG_PLUMED=yes`` flag is included in the cmake
-      command you must ensure that GSL is installed in locations that
-      are specified in your environment.  There are then two additional
-      variables that control the manner in which PLUMED is obtained and
-      linked into LAMMPS.
+      command you must ensure that `the GNU Scientific Library (GSL)
+      <https://www.gnu.org/software/gsl/>` is installed in locations
+      that are accessible in your environment.  There are then two
+      additional variables that control the manner in which PLUMED is
+      obtained and linked into LAMMPS.
 
       .. code-block:: bash
 
@@ -2043,6 +2042,36 @@ verified to work in February 2020 with Quantum Espresso versions 6.3 to
       back to the ``lib/qmmm`` folder and follow the instructions in the
       README file to build the combined LAMMPS/QE QM/MM executable
       (pwqmmm.x) in the lib/qmmm folder.
+
+----------
+
+.. _rheo:
+
+RHEO package
+------------
+
+To build with this package you must have the `GNU Scientific Library
+(GSL) <https://www.gnu.org/software/gsl/>` installed in locations that
+are accessible in your environment.  The GSL library should be at least
+version 2.7.
+
+.. tabs::
+
+   .. tab:: CMake build
+
+      If CMake cannot find the GSL library or include files, you can set:
+
+      .. code-block:: bash
+
+         -D GSL_ROOT_DIR=path    # path to root of GSL installation
+
+   .. tab:: Traditional make
+
+      LAMMPS will try to auto-detect the GSL compiler and linker flags
+      from the corresponding ``pkg-config`` file (``gsl.pc``), otherwise
+      you can edit the file ``lib/rheo/Makefile.lammps``
+      to specify the paths and library names where indicated by comments.
+      This must be done **before** the package is installed.
 
 ----------
 

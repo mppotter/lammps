@@ -49,7 +49,7 @@
 using namespace LAMMPS_NS;
 using MathConst::DEG2RAD;
 
-#define BIG 1.0e20
+static constexpr double BIG = 1.0e20;
 
 enum{NUMERIC,ATOM,TYPE,ELEMENT,ATTRIBUTE};
 enum{SPHERE,LINE,TRI};           // also in some Body and Fix child classes
@@ -134,13 +134,9 @@ DumpImage::DumpImage(LAMMPS *lmp, int narg, char **arg) :
   }
   char *fixID = nullptr;
 
-  thetastr = phistr = nullptr;
   cflag = STATIC;
   cx = cy = cz = 0.5;
-  cxstr = cystr = czstr = nullptr;
 
-  upxstr = upystr = upzstr = nullptr;
-  zoomstr = nullptr;
   boxflag = YES;
   boxdiam = 0.02;
   axesflag = NO;
@@ -486,6 +482,16 @@ DumpImage::~DumpImage()
   memory->destroy(chooseghost);
   memory->destroy(bufcopy);
   memory->destroy(gbuf);
+
+  delete[] upxstr;
+  delete[] upystr;
+  delete[] upzstr;
+  delete[] zoomstr;
+  delete[] thetastr;
+  delete[] phistr;
+  delete[] cxstr;
+  delete[] cystr;
+  delete[] czstr;
 
   delete[] id_grid_compute;
   delete[] id_grid_fix;
@@ -1530,7 +1536,7 @@ int DumpImage::modify_param(int narg, char **arg)
   if (strcmp(arg[0],"acolor") == 0) {
     if (narg < 3) error->all(FLERR,"Illegal dump_modify command");
     int nlo,nhi;
-    utils::bounds(FLERR,arg[1],1,atom->ntypes,nlo,nhi,error);
+    utils::bounds_typelabel(FLERR,arg[1],1,atom->ntypes,nlo,nhi,lmp,Atom::ATOM);
 
     // get list of colors
     // assign colors in round-robin fashion to types
@@ -1551,7 +1557,7 @@ int DumpImage::modify_param(int narg, char **arg)
   if (strcmp(arg[0],"adiam") == 0) {
     if (narg < 3) error->all(FLERR,"Illegal dump_modify command");
     int nlo,nhi;
-    utils::bounds(FLERR,arg[1],1,atom->ntypes,nlo,nhi,error);
+    utils::bounds_typelabel(FLERR,arg[1],1,atom->ntypes,nlo,nhi,lmp,Atom::ATOM);
     double diam = utils::numeric(FLERR,arg[2],false,lmp);
     if (diam <= 0.0) error->all(FLERR,"Illegal dump_modify command");
     for (int i = nlo; i <= nhi; i++) diamtype[i] = diam;
@@ -1582,7 +1588,7 @@ int DumpImage::modify_param(int narg, char **arg)
     if (atom->nbondtypes == 0)
       error->all(FLERR,"Dump modify bcolor not allowed with no bond types");
     int nlo,nhi;
-    utils::bounds(FLERR,arg[1],1,atom->nbondtypes,nlo,nhi,error);
+    utils::bounds_typelabel(FLERR,arg[1],1,atom->nbondtypes,nlo,nhi,lmp,Atom::BOND);
 
     // process list of ncount colornames separated by '/'
     // assign colors in round-robin fashion to bond types
@@ -1605,7 +1611,7 @@ int DumpImage::modify_param(int narg, char **arg)
     if (atom->nbondtypes == 0)
       error->all(FLERR,"Dump modify bdiam not allowed with no bond types");
     int nlo,nhi;
-    utils::bounds(FLERR,arg[1],1,atom->nbondtypes,nlo,nhi,error);
+    utils::bounds_typelabel(FLERR,arg[1],1,atom->nbondtypes,nlo,nhi,lmp,Atom::BOND);
     double diam = utils::numeric(FLERR,arg[2],false,lmp);
     if (diam <= 0.0) error->all(FLERR,"Illegal dump_modify command");
     for (int i = nlo; i <= nhi; i++) bdiamtype[i] = diam;
