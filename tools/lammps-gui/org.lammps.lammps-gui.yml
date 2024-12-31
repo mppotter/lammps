@@ -8,6 +8,7 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --filesystem=host
+  - --share=network
 build-options:
   build-args:
     - --share=network
@@ -87,6 +88,7 @@ modules:
       - -D PKG_QTB=yes
       - -D PKG_REACTION=yes
       - -D PKG_REAXFF=yes
+      - -D PKG_RHEO=yes
       - -D PKG_RIGID=yes
       - -D PKG_SHOCK=yes
       - -D PKG_SMTBQ=yes
@@ -107,5 +109,5 @@ modules:
       - -D BUILD_TOOLS=yes
     sources:
       - type: git
-        url: https://github.com/akohlmey/lammps.git
-        branch: collected-small-changes
+        url: https://github.com/lammps/lammps.git
+        branch: release

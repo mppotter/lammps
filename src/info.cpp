@@ -261,7 +261,7 @@ void Info::command(int narg, char **arg)
         ++idx;
       }
     } else {
-      error->warning(FLERR,"Ignoring unknown or incorrect info command flag");
+      error->warning(FLERR,"Ignoring unknown or incorrect info command flag: {}",arg[idx]);
       ++idx;
     }
   }
@@ -418,6 +418,12 @@ void Info::command(int narg, char **arg)
     fmt::print(out,"Atoms     = {:12},  types = {:8d},  style = {}\n",
                atom->natoms, atom->ntypes, force->pair_style);
 
+    if (atom->tag_enable) fmt::print(out,"Atoms with atom IDs\n");
+    if (atom->molecule) fmt::print(out,"Atoms with molecule IDs\n");
+    if (atom->mass) fmt::print(out,"Atoms with per-type masses\n");
+    if (atom->rmass) fmt::print(out,"Atoms with per-atom masses\n");
+    if (atom->q) fmt::print(out,"Atoms with per-atom charges\n");
+
     if (force->pair && utils::strmatch(force->pair_style,"^hybrid")) {
       auto hybrid = dynamic_cast<PairHybrid *>(force->pair);
       fmt::print(out,"Hybrid sub-styles:");
@@ -473,6 +479,8 @@ void Info::command(int narg, char **arg)
     } else {
       fputs("\nBox has not yet been created\n",out);
     }
+    fmt::print(out,"\nCurrent timestep number = {}\n", update->ntimestep);
+    fmt::print(out,"Current timestep size = {}\n", update->dt);
   }
 
   if (domain->box_exist && (flags & COEFFS)) {
@@ -1308,6 +1316,10 @@ std::string Info::get_fft_info()
 #else
   fft_info += "FFT library = MKL\n";
 #endif
+#elif defined(FFT_MKL_GPU)
+  fft_info += "FFT library = MKL GPU\n";
+#elif defined(FFT_NVPL)
+  fft_info += "FFT library = NVPL\n";
 #elif defined(FFT_FFTW3)
 #if defined(FFT_FFTW_THREADS)
   fft_info += "FFT library = FFTW3 with threads\n";
@@ -1330,12 +1342,16 @@ std::string Info::get_fft_info()
 #else
   fft_info += "KOKKOS FFT library = FFTW3\n";
 #endif
+#elif defined(FFT_KOKKOS_NVPL)
+  fft_info += "KOKKOS FFT library = NVPL\n";
 #elif defined(FFT_KOKKOS_MKL)
 #if defined(FFT_KOKKOS_MKL_THREADS)
   fft_info += "KOKKOS FFT library = MKL with threads\n";
 #else
   fft_info += "KOKKOS FFT library = MKL\n";
 #endif
+#elif defined(FFT_KOKKOS_MKL_GPU)
+  fft_info += "KOKKOS FFT library = MKL GPU\n";
 #else
   fft_info += "KOKKOS FFT library = KISS\n";
 #endif

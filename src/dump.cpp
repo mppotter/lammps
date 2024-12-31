@@ -73,6 +73,7 @@ Dump::Dump(LAMMPS *lmp, int /*narg*/, char **arg) :
 
   clearstep = 0;
   sort_flag = 0;
+  sortcol = 0;
   balance_flag = 0;
   append_flag = 0;
   buffer_allow = 0;
@@ -325,8 +326,9 @@ int Dump::count()
 
 void Dump::write()
 {
-  imageint *imagehold;
-  double **xhold,**vhold;
+  imageint *imagehold = nullptr;
+  double **xhold = nullptr;
+  double **vhold = nullptr;
 
   // simulation box bounds
 
@@ -573,7 +575,7 @@ void Dump::openfile()
         nameslist[numfiles] = utils::strdup(filecurrent);
         ++numfiles;
       } else {
-        remove(nameslist[fileidx]);
+        (void) remove(nameslist[fileidx]);
         delete[] nameslist[fileidx];
         nameslist[fileidx] = utils::strdup(filecurrent);
         fileidx = (fileidx + 1) % maxfiles;

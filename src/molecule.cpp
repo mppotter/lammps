@@ -958,7 +958,7 @@ void Molecule::diameters(char *line)
 }
 
 /* ----------------------------------------------------------------------
-   read charges from file
+   read dipoles from file
 ------------------------------------------------------------------------- */
 
 void Molecule::dipoles(char *line)
@@ -2059,6 +2059,7 @@ void Molecule::deallocate()
   memory->destroy(type);
   memory->destroy(molecule);
   memory->destroy(q);
+  memory->destroy(mu);
   memory->destroy(radius);
   memory->destroy(rmass);
 

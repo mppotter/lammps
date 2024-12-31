@@ -1,4 +1,3 @@
-// clang-format off
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
@@ -29,9 +28,9 @@
 #include "force.h"
 #include "math_extra.h"
 #include "memory.h"
-#include "neighbor.h"
 #include "neigh_list.h"
 #include "neigh_request.h"
+#include "neighbor.h"
 
 using namespace LAMMPS_NS;
 using namespace RHEO_NS;
@@ -43,11 +42,11 @@ static constexpr double EPSILON = 1e-10;
 /* ---------------------------------------------------------------------- */
 
 ComputeRHEOSurface::ComputeRHEOSurface(LAMMPS *lmp, int narg, char **arg) :
-  Compute(lmp, narg, arg), nsurface(nullptr), rsurface(nullptr), divr(nullptr), fix_rheo(nullptr),
-  rho0(nullptr), B(nullptr), gradC(nullptr), list(nullptr), compute_kernel(nullptr),
-  compute_interface(nullptr)
+    Compute(lmp, narg, arg), nsurface(nullptr), rsurface(nullptr), divr(nullptr), fix_rheo(nullptr),
+    rho0(nullptr), B(nullptr), gradC(nullptr), list(nullptr), compute_kernel(nullptr),
+    compute_interface(nullptr)
 {
-  if (narg != 3) error->all(FLERR,"Illegal compute RHEO/SURFACE command");
+  if (narg != 3) error->all(FLERR, "Illegal compute RHEO/SURFACE command");
 
   int dim = domain->dimension;
   comm_forward = 2;
@@ -81,6 +80,8 @@ void ComputeRHEOSurface::init()
   threshold_z = fix_rheo->zmin_surface;
   threshold_splash = fix_rheo->zmin_splash;
   interface_flag = fix_rheo->interface_flag;
+
+  fix_rheo->coordination_flag = 1;
 
   cutsq = cut * cut;
 
@@ -123,16 +124,14 @@ void ComputeRHEOSurface::compute_peratom()
   firstneigh = list->firstneigh;
 
   // Grow and zero arrays
-  if (nmax_store < atom->nmax)
-    grow_arrays(atom->nmax);
+  if (nmax_store < atom->nmax) grow_arrays(atom->nmax);
 
   size_t nbytes = nmax_store * sizeof(double);
   memset(&divr[0], 0, nbytes);
   memset(&rsurface[0], 0, nbytes);
-  memset(&nsurface[0][0], 0, dim * nbytes);
-  memset(&gradC[0][0], 0, dim * dim * nbytes);
-  memset(&B[0][0], 0, dim * dim * nbytes);
-
+  memset(&nsurface[0][0], 0, nbytes * dim);
+  memset(&gradC[0][0], 0, nbytes * dim * dim);
+  memset(&B[0][0], 0, nbytes * dim * dim);
 
   // loop over neighbors to calculate the average orientation of neighbors
   for (ii = 0; ii < inum; ii++) {
@@ -165,9 +164,9 @@ void ComputeRHEOSurface::compute_peratom()
         // Add corrections for walls
         if (interface_flag) {
           if (fluidi && (!fluidj)) {
-            rhoj = compute_interface->correct_rho(j, i);
+            rhoj = compute_interface->correct_rho(j);
           } else if ((!fluidi) && fluidj) {
-            rhoi = compute_interface->correct_rho(i, j);
+            rhoi = compute_interface->correct_rho(i);
           } else if ((!fluidi) && (!fluidj)) {
             rhoi = rho0[itype];
             rhoj = rho0[jtype];
@@ -181,7 +180,7 @@ void ComputeRHEOSurface::compute_peratom()
           Voli = mass[itype] / rhoi;
           Volj = mass[jtype] / rhoj;
         }
-        compute_kernel->calc_dw_quintic(i, j, dx[0], dx[1], dx[2], sqrt(rsq), dWij, dWji);
+        compute_kernel->calc_dw_quintic(dx[0], dx[1], dx[2], sqrt(rsq), dWij, dWji);
 
         for (a = 0; a < dim; a++) {
           divr[i] -= dWij[a] * dx[a] * Volj;
@@ -189,7 +188,7 @@ void ComputeRHEOSurface::compute_peratom()
         }
 
         if ((j < nlocal) || newton) {
-          for (a = 0; a < dim; a++){
+          for (a = 0; a < dim; a++) {
             divr[j] += dWji[a] * dx[a] * Voli;
             gradC[j][a] += dWji[a] * Voli;
           }
@@ -200,10 +199,8 @@ void ComputeRHEOSurface::compute_peratom()
 
   // reverse gradC and divr, forward divr
   comm_stage = 0;
-  comm_reverse = dim * dim + 1;
-  comm_forward = 1;
-  if (newton) comm->reverse_comm(this);
-  comm->forward_comm(this);
+  if (newton) comm->reverse_comm(this, dim * dim + 1);
+  comm->forward_comm(this, 1);
 
   // calculate nsurface for local atoms
   // Note, this isn't forwarded to ghosts
@@ -211,12 +208,10 @@ void ComputeRHEOSurface::compute_peratom()
   for (i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) {
       maggC = 0.0;
-      for (a = 0;a < dim; a++)
-        maggC += gradC[i][a] * gradC[i][a];
+      for (a = 0; a < dim; a++) maggC += gradC[i][a] * gradC[i][a];
       maggC = sqrt(maggC) + EPSILON;
       maggC = 1.0 / maggC;
-      for (a = 0; a < dim; a++)
-        nsurface[i][a] = -gradC[i][a] * maggC;
+      for (a = 0; a < dim; a++) nsurface[i][a] = -gradC[i][a] * maggC;
     }
   }
 
@@ -233,8 +228,7 @@ void ComputeRHEOSurface::compute_peratom()
         test = coordination[i] < threshold_z;
 
       // Treat nonfluid particles as bulk
-      if (status[i] & PHASECHECK)
-        test = 0;
+      if (status[i] & PHASECHECK) test = 0;
 
       if (test) {
         if (coordination[i] < threshold_splash)
@@ -248,7 +242,6 @@ void ComputeRHEOSurface::compute_peratom()
       }
     }
   }
-
 
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
@@ -277,18 +270,17 @@ void ComputeRHEOSurface::compute_peratom()
             status[i] |= STATUS_LAYER;
           }
 
-          if (status[j] & STATUS_SURFACE)
-            rsurface[i] = MIN(rsurface[i], sqrt(rsq));
+          if (status[j] & STATUS_SURFACE) rsurface[i] = MIN(rsurface[i], sqrt(rsq));
         }
 
         if (fluidj && (j < nlocal || newton)) {
-          if ((status[j] & STATUS_BULK) && (status[j] & PHASECHECK) && (status[i] & STATUS_SURFACE)) {
+          if ((status[j] & STATUS_BULK) && (status[j] & PHASECHECK) &&
+              (status[i] & STATUS_SURFACE)) {
             status[j] &= SURFACEMASK;
             status[j] |= STATUS_LAYER;
           }
 
-          if (status[i] & STATUS_SURFACE)
-            rsurface[j] = MIN(rsurface[j], sqrt(rsq));
+          if (status[i] & STATUS_SURFACE) rsurface[j] = MIN(rsurface[j], sqrt(rsq));
         }
       }
     }
@@ -299,17 +291,14 @@ void ComputeRHEOSurface::compute_peratom()
   for (i = 0; i < nall; i++) {
     if (mask[i] & groupbit) {
       if (!(status[i] & STATUS_SURFACE))
-        for (a = 0; a < dim; a++)
-          nsurface[i][a] = 0.0;
+        for (a = 0; a < dim; a++) nsurface[i][a] = 0.0;
     }
   }
 
   // forward/reverse status and rsurface
   comm_stage = 1;
-  comm_reverse = 2;
-  comm_forward = 2;
-  if (newton) comm->reverse_comm(this);
-  comm->forward_comm(this);
+  if (newton) comm->reverse_comm(this, 2);
+  comm->forward_comm(this, 2);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -323,9 +312,8 @@ int ComputeRHEOSurface::pack_reverse_comm(int n, int first, double *buf)
   for (int i = first; i < last; i++) {
     if (comm_stage == 0) {
       buf[m++] = divr[i];
-      for (int a = 0; a < dim; a ++ )
-        for (int b = 0; b < dim; b ++)
-          buf[m++] = gradC[i][a * dim + b];
+      for (int a = 0; a < dim; a++)
+        for (int b = 0; b < dim; b++) buf[m++] = gradC[i][a * dim + b];
     } else if (comm_stage == 1) {
       buf[m++] = (double) status[i];
       buf[m++] = rsurface[i];
@@ -345,9 +333,8 @@ void ComputeRHEOSurface::unpack_reverse_comm(int n, int *list, double *buf)
     int j = list[i];
     if (comm_stage == 0) {
       divr[j] += buf[m++];
-      for (int a = 0; a < dim; a ++ )
-        for (int b = 0; b < dim; b ++)
-          gradC[j][a * dim + b] += buf[m++];
+      for (int a = 0; a < dim; a++)
+        for (int b = 0; b < dim; b++) gradC[j][a * dim + b] += buf[m++];
     } else if (comm_stage == 1) {
       auto tmp1 = (int) buf[m++];
       if ((status[j] & STATUS_BULK) && (tmp1 & STATUS_LAYER)) {
@@ -360,11 +347,10 @@ void ComputeRHEOSurface::unpack_reverse_comm(int n, int *list, double *buf)
   }
 }
 
-
 /* ---------------------------------------------------------------------- */
 
-int ComputeRHEOSurface::pack_forward_comm(int n, int *list, double *buf,
-                                        int /*pbc_flag*/, int * /*pbc*/)
+int ComputeRHEOSurface::pack_forward_comm(int n, int *list, double *buf, int /*pbc_flag*/,
+                                          int * /*pbc*/)
 {
   int *status = atom->rheo_status;
   int m = 0;

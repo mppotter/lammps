@@ -35,8 +35,10 @@ colvarproxy_lammps::colvarproxy_lammps(LAMMPS_NS::LAMMPS *lmp)  : _lmp(lmp), _ra
 
   inter_me = 0;
   inter_num = 1;
+  bias_energy = 0.0;
 
   engine_ready_ = false;
+  inter_comm = MPI_COMM_NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -202,7 +204,7 @@ cvm::rvector colvarproxy_lammps::position_distance(cvm::atom_pos const &pos1,
   double xtmp = pos2.x - pos1.x;
   double ytmp = pos2.y - pos1.y;
   double ztmp = pos2.z - pos1.z;
-  _lmp->domain->minimum_image(xtmp,ytmp,ztmp);
+  _lmp->domain->minimum_image_big(xtmp,ytmp,ztmp);
   return {xtmp, ytmp, ztmp};
 }
 
@@ -210,9 +212,7 @@ cvm::rvector colvarproxy_lammps::position_distance(cvm::atom_pos const &pos1,
 
 void colvarproxy_lammps::log(std::string const &message)
 {
-  auto lines = LAMMPS_NS::utils::split_lines(message);
-  for (const auto &line : lines)
-    LAMMPS_NS::utils::logmesg(_lmp, message);
+  LAMMPS_NS::utils::logmesg(_lmp, message);
 }
 
 /* ---------------------------------------------------------------------- */
