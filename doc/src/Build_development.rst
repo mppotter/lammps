@@ -28,28 +28,6 @@ variable VERBOSE set to 1:
 
 ----------
 
-.. _clang-tidy:
-
-Enable static code analysis with clang-tidy (CMake only)
---------------------------------------------------------
-
-The `clang-tidy tool <https://clang.llvm.org/extra/clang-tidy/>`_ is a
-static code analysis tool to diagnose (and potentially fix) typical
-programming errors or coding style violations.  It has a modular framework
-of tests that can be adjusted to help identifying problems before they
-become bugs and also assist in modernizing large code bases (like LAMMPS).
-It can be enabled for all C++ code with the following CMake flag
-
-.. code-block:: bash
-
-   -D ENABLE_CLANG_TIDY=value    # value = no (default) or yes
-
-With this flag enabled all source files will be processed twice, first to
-be compiled and then to be analyzed. Please note that the analysis can be
-significantly more time-consuming than the compilation itself.
-
-----------
-
 .. _iwyu_processing:
 
 Report missing and unneeded '#include' statements (CMake only)
@@ -263,9 +241,9 @@ will be skipped if prerequisite features are not available in LAMMPS.
    time.  Preference is given to parts of the code base that are easy to
    test or commonly used.
 
-Tests as shown by the ``ctest`` program are command lines defined in the
+Tests as shown by the ``ctest`` program are commands defined in the
 ``CMakeLists.txt`` files in the ``unittest`` directory tree.  A few
-tests simply execute LAMMPS with specific command line flags and check
+tests simply execute LAMMPS with specific command-line flags and check
 the output to the screen for expected content.  A large number of unit
 tests are special tests programs using the `GoogleTest framework
 <https://github.com/google/googletest/>`_ and linked to the LAMMPS
@@ -420,7 +398,7 @@ during MD timestepping and manipulate per-atom properties like
 positions, velocities, and forces.  For those fix styles, testing can be
 done in a very similar fashion as for force fields and thus there is a
 test program `test_fix_timestep` that shares a lot of code, properties,
-and command line flags with the force field style testers described in
+and command-line flags with the force field style testers described in
 the previous section.
 
 This tester will set up a small molecular system run with verlet run
@@ -523,7 +501,7 @@ to do this to install it via pip:
 
 .. code-block:: bash
 
-   pip install git+https://github.com/gcovr/gcovr.git
+   python3 -m pip install gcovr
 
 After post-processing with ``gen_coverage_html`` the results are in
 a folder ``coverage_html`` and can be viewed with a web browser.
@@ -642,10 +620,10 @@ The following target are available for both, GNU make and CMake:
 
 .. _gh-cli:
 
-GitHub command line interface
+GitHub command-line interface
 -----------------------------
 
-GitHub has developed a `command line tool <https://cli.github.com>`_
+GitHub has developed a `command-line tool <https://cli.github.com>`_
 to interact with the GitHub website via a command called ``gh``.
 This is extremely convenient when working with a Git repository hosted
 on GitHub (like LAMMPS).  It is thus highly recommended to install it
