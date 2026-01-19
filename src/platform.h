@@ -371,6 +371,21 @@ namespace platform {
 
   bool file_is_writable(const std::string &path);
 
+  /*! Report a time stamp when a file was last written to
+   *
+   * For increased accuracy and portability, the time stamp is relative
+   * to an arbitrary offset created when loading the LAMMPS library or
+   * launching the executable.  This allows to report the time difference
+   * as a floating point number and not some platform or architecture
+   * specific type requiring to include additional headers.
+   *
+   * When two timestamps are the same, the file has not been written to.
+   *
+   * \param path file path
+   * \return time stamp when file was last written to */
+
+  double file_write_time(const std::string &path);
+
   /*! Return free disk space in bytes of file system pointed to by path
    *
    * Returns -1.0 if the path is invalid or free space reporting not supported.
@@ -382,7 +397,7 @@ namespace platform {
 
   /*! Check if a file name ends in a known extension for a compressed file format
    *
-   * Currently supported file extensions are: .gz, .bz2, .zst, .xz, .lzma, lz4
+   * Currently supported file extensions are: .gz, .bz2, .zst, .xz, .lzma, .lz4, .br, and .7z
    *
    *  \param  file  name of the file to check
    *  \return  true if the file has a known extension, otherwise false  */
